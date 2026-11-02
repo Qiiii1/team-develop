@@ -1,10 +1,10 @@
-# 团队 Harness
+# 团队 Develop
 
 2026-10-31 已确认转向独立网页应用：部署在本机、局域网成员通过浏览器访问、每人配置自己的 API Key。[网页后端设计](docs/网页后端设计.md)记录技术栈、数据表、接口和分阶段验收；第一阶段已实现，试用方式见下文。
 
 ## 网页版第一阶段
 
-[GitHub Pages 网页预览](https://qiiii1.github.io/team-harness-web/)已发布，当前尚未连接本机 API。前后端分离和跨域登录适配已完成，已按用户选择关闭公网转发，当前保留本机／局域网服务；说明见 [Pages 与本机后端](docs/GitHubPages与本机后端.md)。
+[GitHub Pages 网页预览](https://qiiii1.github.io/team-develop-web/)已发布，当前尚未连接本机 API。前后端分离和跨域登录适配已完成，已按用户选择关闭公网转发，当前保留本机／局域网服务；说明见 [Pages 与本机后端](docs/GitHubPages与本机后端.md)。
 
 已实现独立账号、登录退出、团队创建、邀请码加入、成员管理及每人独立的 API Key 配置。模型对话和成果分享尚未接入，保存 Key 不调用模型。
 
@@ -23,7 +23,7 @@ npm start
 
 独立的[系统管理后台](docs/系统管理后台.md)位于 `/admin`，可统一管理账号、团队与成员，并查看操作记录。部署者通过 `npm run admin:grant -- 登录名` 授予系统管理员权限，新注册账号默认无此权限。
 
-需要局域网访问时，按[局域网 HTTPS 配置](docs/局域网HTTPS配置.md)执行 `npm run setup:lan -- 本机内网IP` 生成证书和配置。成员首次需要信任脚本生成的公开 CA 证书 `artifacts/Team-Harness-LAN-CA.crt`。本机数据、证书、密钥、截图和打包产物不包含在源码仓库中。
+需要局域网访问时，按[局域网 HTTPS 配置](docs/局域网HTTPS配置.md)执行 `npm run setup:lan -- 本机内网IP` 生成证书和配置。成员首次需要信任脚本生成的公开 CA 证书 `artifacts/Team-Develop-LAN-CA.crt`。本机数据、证书、密钥、截图和打包产物不包含在源码仓库中。
 
 ```sh
 npm run dev:web       # 后端开发模式

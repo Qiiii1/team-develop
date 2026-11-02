@@ -1,4 +1,4 @@
-# 团队 Harness 插件试用 · 0.0.3
+# 团队 Develop 插件试用 · 0.0.3
 
 适用于 macOS 上的 DeepSeek Harness **0.2.0-rc.2**。这是插件，不是独立的 dsh 安装程序；请先安装并打开一次官方 DeepSeek Harness。
 

@@ -2,9 +2,9 @@
 
 本轮目标：用一个固定 GitHub Pages 网页入口；账号、团队、成员、模型配置和数据库继续保存在部署者电脑上。
 
-当前状态：静态预览已发布到 https://qiiii1.github.io/team-harness-web/ ，尚未连接业务 API。用户已明确选择不允许 Cloudflare 转发，暂时保留本机／局域网连接。预览禁止业务请求，原局域网服务正常运行。`HARNESS_ALLOW_CLOUDFLARE=0` 已保存，分享启动器默认拒绝启动。
+当前状态：静态预览已发布到 https://qiiii1.github.io/team-develop-web/ ，尚未连接业务 API。用户已明确选择不允许 Cloudflare 转发，暂时保留本机／局域网连接。预览禁止业务请求，原局域网服务正常运行。`HARNESS_ALLOW_CLOUDFLARE=0` 已保存，分享启动器默认拒绝启动。
 
-前端仓库：https://github.com/Qiiii1/team-harness-web 。只发布静态网页文件，不发布本机后端源码、数据库、证书、密码或模型 Key。
+前端仓库：https://github.com/Qiiii1/team-develop-web 。只发布静态网页文件，不发布本机后端源码、数据库、证书、密码或模型 Key。
 
 ## 请求如何传输
 
@@ -34,7 +34,7 @@ flowchart LR
 首次需要准备项目专用的 `cloudflared` 工具和可用于发布此仓库的 GitHub CLI 登录。在 `.env.web.local` 中配置：
 
 ```dotenv
-HARNESS_PAGES_REPOSITORY=Qiiii1/team-harness-web
+HARNESS_PAGES_REPOSITORY=Qiiii1/team-develop-web
 ```
 
 以下为将来明确授权公网转发后才可采用的部署方式；当前不要执行。必须显式启用 `HARNESS_ALLOW_CLOUDFLARE=1`，分享启动器才会运行。届时先停止占用 4185 端口的旧 `npm start`，再运行：

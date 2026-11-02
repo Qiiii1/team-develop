@@ -51,7 +51,7 @@ function render() {
   if (!memberById(selectedMember)) selectedMember = 'me';
   $('#project-name').textContent = state.project.name;
   $('#header-project-name').textContent = state.project.name;
-  document.title = `${state.project.name} · 团队 Harness`;
+  document.title = `${state.project.name} · 团队 Develop`;
   const completed = state.tasks.filter((task) => task.status === 'done').length;
   $('#progress-value').textContent = state.tasks.length ? `${completed} / ${state.tasks.length}` : '—';
   $('#progress-fill').style.width = `${state.tasks.length ? completed / state.tasks.length * 100 : 0}%`;

@@ -23,7 +23,7 @@ HARNESS_TLS_KEY=.local/web/tls/key.pem
 
 ## 发给队友
 
-- `artifacts/Team-Harness-LAN-CA.crt`：可单独分享的公开 CA 证书。
+- `artifacts/Team-Develop-LAN-CA.crt`：可单独分享的公开 CA 证书。
 
 成员设备首次需要导入并信任此 CA，随后访问 HTTPS 地址、注册账号、使用邀请码加入。项目没有替任何设备修改系统信任设置。使用者必须确认公开证书来自部署者；不要将 `.local/web/tls/ca-key.pem`、`key.pem`、数据库或模型加密主密钥发给队友。
 

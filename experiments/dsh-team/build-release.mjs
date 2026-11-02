@@ -15,7 +15,7 @@ const staging = join(root, '.local/release-staging');
 await rm(staging, { recursive: true, force: true });
 await mkdir(staging, { recursive: true });
 const results = [];
-const guide = join(root, 'docs/团队Harness-使用指南.md');
+const guide = join(root, 'docs/团队Develop-使用指南.md');
 await copyFile(guide, join(artifacts, `Team-Harness-Guide-${version}.md`));
 function archive(directory, destination) {
   const zipped = spawnSync('python3', ['-c', 'import pathlib,sys,zipfile\np=pathlib.Path(sys.argv[1])\nwith zipfile.ZipFile(sys.argv[2],"w",zipfile.ZIP_DEFLATED) as z:\n for f in sorted(p.rglob("*")):\n  if f.is_file():z.write(f,str(f.relative_to(p.parent)))', directory, destination], { encoding: 'utf8' });

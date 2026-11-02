@@ -18,14 +18,14 @@ const paths = Object.fromEntries(['ca-key.pem', 'ca.pem', 'ca.cnf', 'key.pem', '
 const openssl = args => execFileSync('openssl', args, { stdio: ['ignore', 'pipe', 'pipe'] });
 if (existsSync(paths['ca-key.pem']) !== existsSync(paths['ca.pem'])) throw new Error('局域网 CA 文件不完整，请恢复原证书及私钥后重试。');
 if (!existsSync(paths['ca.pem'])) {
-  writeFileSync(paths['ca.cnf'], `[req]\nprompt = no\ndistinguished_name = dn\nx509_extensions = ca_extensions\n[dn]\nCN = Team Harness Local CA\n[ca_extensions]\nbasicConstraints = critical, CA:TRUE, pathlen:0\nkeyUsage = critical, keyCertSign, cRLSign\nsubjectKeyIdentifier = hash\nauthorityKeyIdentifier = keyid:always\n`, { mode: 0o600 });
+  writeFileSync(paths['ca.cnf'], `[req]\nprompt = no\ndistinguished_name = dn\nx509_extensions = ca_extensions\n[dn]\nCN = Team Develop Local CA\n[ca_extensions]\nbasicConstraints = critical, CA:TRUE, pathlen:0\nkeyUsage = critical, keyCertSign, cRLSign\nsubjectKeyIdentifier = hash\nauthorityKeyIdentifier = keyid:always\n`, { mode: 0o600 });
   openssl(['genrsa', '-out', paths['ca-key.pem'], '3072']);
   chmodSync(paths['ca-key.pem'], 0o600);
   openssl(['req', '-new', '-x509', '-sha256', '-key', paths['ca-key.pem'], '-days', '3650', '-config', paths['ca.cnf'], '-out', paths['ca.pem']]);
 }
 openssl(['x509', '-in', paths['ca.pem'], '-checkend', '86400', '-noout']);
 const names = [...new Set(['127.0.0.1', address])].map((value, index) => `IP.${index+1} = ${value}`).join('\n');
-writeFileSync(paths['server.cnf'], `[req]\nprompt = no\ndistinguished_name = dn\n[dn]\nCN = Team Harness LAN\n[server_extensions]\nbasicConstraints = critical, CA:FALSE\nkeyUsage = critical, digitalSignature, keyEncipherment\nextendedKeyUsage = serverAuth\nsubjectAltName = @names\nsubjectKeyIdentifier = hash\nauthorityKeyIdentifier = keyid,issuer\n[names]\nDNS.1 = localhost\n${names}\n`, { mode: 0o600 });
+writeFileSync(paths['server.cnf'], `[req]\nprompt = no\ndistinguished_name = dn\n[dn]\nCN = Team Develop LAN\n[server_extensions]\nbasicConstraints = critical, CA:FALSE\nkeyUsage = critical, digitalSignature, keyEncipherment\nextendedKeyUsage = serverAuth\nsubjectAltName = @names\nsubjectKeyIdentifier = hash\nauthorityKeyIdentifier = keyid,issuer\n[names]\nDNS.1 = localhost\n${names}\n`, { mode: 0o600 });
 openssl(['genrsa', '-out', paths['key.pem'], '2048']);
 chmodSync(paths['key.pem'], 0o600);
 openssl(['req', '-new', '-key', paths['key.pem'], '-config', paths['server.cnf'], '-out', paths['server.csr']]);
@@ -35,7 +35,7 @@ rmSync(paths['server.csr']);
 const cert = new X509Certificate(readFileSync(paths['cert.pem']));
 if (!cert.checkIP(address) || !cert.checkHost('localhost')) throw new Error('证书名称验证失败。');
 mkdirSync('artifacts', { recursive: true });
-const publicCertificate = resolve('artifacts/Team-Harness-LAN-CA.crt');
+const publicCertificate = resolve('artifacts/Team-Develop-LAN-CA.crt');
 copyFileSync(paths['ca.pem'], publicCertificate);
 chmodSync(publicCertificate, 0o644);
 const port = Number(process.env.HARNESS_WEB_PORT ?? 4185);

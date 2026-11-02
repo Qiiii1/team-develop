@@ -16,5 +16,5 @@ const html = readFileSync('web/index.html','utf8').replace('<meta charset="utf-8
 writeFileSync(resolve(output, 'index.html'), html);
 writeFileSync(resolve(output, 'config.js'), `// Public endpoint configuration only. Never put keys or tokens here.\nwindow.HARNESS_CONFIG = ${JSON.stringify({apiBaseUrl:previewOnly?'':url.origin,staticHosting:true,connectionPending:previewOnly})};\n`);
 writeFileSync(resolve(output, '.nojekyll'), '');
-writeFileSync(resolve(output, 'README.md'), '# 团队 Harness 网页前端\n\n此仓库仅包含 GitHub Pages 静态页面。账号、团队、个人模型配置与数据保存在部署者自己的后端服务器中，GitHub 不保存这些业务数据。\n\n后端离线时页面仍可打开，登录和数据操作需要后端在线。\n');
+writeFileSync(resolve(output, 'README.md'), '# 团队 Develop 网页前端\n\n此仓库仅包含 GitHub Pages 静态页面。账号、团队、个人模型配置与数据保存在部署者自己的后端服务器中，GitHub 不保存这些业务数据。\n\n后端离线时页面仍可打开，登录和数据操作需要后端在线。\n');
 console.log(`Pages 前端已生成：${output}\n连接：${previewOnly?'仅网页预览，不发送业务请求':url.origin}`);

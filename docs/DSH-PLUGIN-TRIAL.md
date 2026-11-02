@@ -1,10 +1,10 @@
-# 团队 Harness 插件试用 · 0.0.3
+# 团队 Develop 插件试用 · 0.0.3
 
 2026-10-16。适用于 macOS DeepSeek Harness 0.2.0-rc.2。
 
 ## 交付
 
-- [完整使用指南](团队Harness-使用指南.md)：发起人安装、朋友加入、日常分享、重启、备份和常见问题。
+- [完整使用指南](团队Develop-使用指南.md)：发起人安装、朋友加入、日常分享、重启、备份和常见问题。
 - [总试用包](../artifacts/Team-Harness-Trial-0.0.3.zip)：完整指南与下面两份角色安装包。
 - [朋友安装包](../artifacts/Team-Harness-Friends-0.0.3.zip)：插件 tgz、Install.command、Uninstall.command、中文说明。
 - [发起人安装包](../artifacts/Team-Harness-Host-0.0.3.zip)：包含朋友包全部文件，以及独立共享服务和临时 HTTPS 启动器。

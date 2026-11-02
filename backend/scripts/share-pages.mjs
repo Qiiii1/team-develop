@@ -32,7 +32,7 @@ try{
   const frontendOrigin=`https://${repo.split('/')[0].toLowerCase()}.github.io`;
   const env={...process.env,HARNESS_WEB_ALLOWED_HOSTS:new URL(url).hostname,HARNESS_WEB_ALLOWED_ORIGINS:frontendOrigin};
   backend=spawn(process.execPath,['dist/backend/main.js'],{env,stdio:['ignore','pipe','inherit']});
-  await new Promise((yes,no)=>{let text='';const timeout=setTimeout(()=>no(new Error('后端启动超时。')),15_000);backend.stdout.on('data',chunk=>{process.stdout.write(chunk);text+=chunk;if(text.includes('Team Harness M1:')){clearTimeout(timeout);yes();}});backend.once('error',no);backend.once('exit',code=>{clearTimeout(timeout);no(new Error(`后端退出：${code}`));});});
+  await new Promise((yes,no)=>{let text='';const timeout=setTimeout(()=>no(new Error('后端启动超时。')),15_000);backend.stdout.on('data',chunk=>{process.stdout.write(chunk);text+=chunk;if(text.includes('Team Develop M1:')){clearTimeout(timeout);yes();}});backend.once('error',no);backend.once('exit',code=>{clearTimeout(timeout);no(new Error(`后端退出：${code}`));});});
   console.log(`API 公网入口：${url}\n正在将 API 地址写入 Pages 配置并发布…`);
   execFileSync(process.execPath,['backend/scripts/publish-pages.mjs'],{env:{...env,PAGES_API_BASE_URL:url},stdio:'inherit'});
   console.log('Pages 网页链接保持不变；请保持此进程和电脑在线。Ctrl+C 同时停止 API 与隧道。');
