@@ -1,0 +1,55 @@
+{
+  "name": "team-harness-dsh-plugin",
+  "version": "0.0.3",
+  "private": true,
+  "type": "module",
+  "main": "./index.mjs",
+  "files": [
+    "index.mjs",
+    "tools.mjs",
+    "http.mjs",
+    "domain.mjs",
+    "drafts.mjs",
+    "ai.mjs",
+    "client-v2.js",
+    "styles.css",
+    "config.mjs",
+    "service.mjs",
+    "cordis.patch.yml"
+  ],
+  "exports": {
+    ".": "./index.mjs",
+    "./client": "./client-v2.js",
+    "./package.json": "./package.json",
+    "./cordis.patch.yml": "./cordis.patch.yml"
+  },
+  "dsh": {
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-layout",
+        "@deepseek-ai/dsh-client-ui-sidebar"
+      ]
+    },
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "scripts": {
+    "start": "node run-demo.mjs",
+    "preview": "node start-preview.mjs",
+    "test": "node --test test/*.test.mjs"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "description": "真人团队共享进展与关键决定，个人对话保留在各自 dsh。",
+  "peerDependencies": {
+    "@deepseek-ai/dsh-tools": "0.2.0-rc.2"
+  },
+  "peerDependenciesMeta": {
+    "@deepseek-ai/dsh-tools": {
+      "optional": true
+    }
+  }
+}

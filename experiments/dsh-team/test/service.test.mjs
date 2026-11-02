@@ -1,0 +1,165 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { mkdtemp, readFile, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { startTeamServer } from '../service.mjs';
+import { createTeamClient } from '../tools.mjs';
+import { createDraftStore } from '../drafts.mjs';
+import { generateDraft } from '../ai.mjs';
+import { writeFile } from 'node:fs/promises';
+
+test('two independent members share confirmed records; private fields and forged authors are refused', async t => {
+  const directory = await mkdtemp(join(tmpdir(), 'team-dsh-'));
+  const service = await startTeamServer({ port: 0, dataFile: join(directory, 'teams.json') });
+  t.after(async () => { await service.close(); await rm(directory, { recursive: true }); });
+  const a = createTeamClient({ serviceUrl: service.url, bindingFile: join(directory, 'a/binding.json') });
+  const b = createTeamClient({ serviceUrl: service.url, bindingFile: join(directory, 'b/binding.json') });
+  assert.deepEqual(await a.state(), { connected: false });
+  await a.connect({ action: 'create', name: '验证', goal: '', displayName: 'A', role: '产品' });
+  await b.connect({ action: 'join', ...(await a.invite()), displayName: 'B', role: '研发' });
+  const bindingA = JSON.parse(await readFile(join(directory, 'a/binding.json')));
+  const bindingB = JSON.parse(await readFile(join(directory, 'b/binding.json')));
+  assert.notEqual(bindingA.memberToken, bindingB.memberToken);
+  const progress = { kind: 'progress', text: '接口还需要确认', artifactUrl: '' };
+  await a.publish(progress);
+  const stateB = await b.state();
+  assert.equal(stateB.team.members.length, 2);
+  assert.equal(stateB.team.updates[0].memberId, bindingA.memberId);
+  assert.equal(stateB.team.updates[0].text, progress.text);
+  assert.equal(JSON.stringify(stateB).includes('tokenHash'), false);
+  await assert.rejects(b.publish({ ...progress, conversations: ['PRIVATE_CHAT'] }), /未允许共享/);
+  await assert.rejects(b.publish({ ...progress, memberId: bindingA.memberId }), /未允许共享/);
+  await assert.rejects(b.publish({ ...progress, artifactUrl: 'javascript:alert(1)' }), /http 或 https/);
+  const unauthorized = await fetch(`${service.url}/v1/team`);
+  assert.equal(unauthorized.status, 401);
+  const crossOrigin = await fetch(`${service.url}/v1/team`, { headers: { Origin: 'https://example.com', Authorization: `Bearer ${bindingB.memberToken}` } });
+  assert.equal(crossOrigin.status, 403);
+  assert.equal(JSON.stringify(await a.state()).includes('PRIVATE_CHAT'), false);
+});
+
+test('concurrent publication is preserved and team membership survives restart', async t => {
+  const directory = await mkdtemp(join(tmpdir(), 'team-dsh-'));
+  const dataFile = join(directory, 'teams.json');
+  let service = await startTeamServer({ port: 0, dataFile });
+  t.after(async () => { await service.close(); await rm(directory, { recursive: true }); });
+  let a = createTeamClient({ serviceUrl: service.url, bindingFile: join(directory, 'binding.json') });
+  await a.connect({ action: 'create', name: '持久化验证', displayName: 'A' });
+  await Promise.all(Array.from({ length: 8 }, (_, index) => a.publish({ kind: 'conclusion', text: `结论 ${index}`, artifactUrl: '' })));
+  await service.close();
+  service = await startTeamServer({ port: 0, dataFile });
+  a = createTeamClient({ serviceUrl: service.url, bindingFile: join(directory, 'binding.json') });
+  const state = await a.state();
+  assert.equal(state.team.updates.length, 8);
+  assert.equal(state.team.revision, 9);
+  assert.equal(state.team.members[0].name, 'A');
+});
+
+test('private drafts publish once and decisions preserve authority, versions and affected work', async t => {
+  const directory = await mkdtemp(join(tmpdir(), 'team-workflow-'));
+  const service = await startTeamServer({ port: 0 });
+  t.after(async () => { await service.close(); await rm(directory, { recursive: true }); });
+  const a = createTeamClient({ serviceUrl: service.url, bindingFile: join(directory, 'a.json') });
+  const b = createTeamClient({ serviceUrl: service.url, bindingFile: join(directory, 'b.json') });
+  await a.connect({ action: 'create', name: '产品试验', displayName: 'A' });
+  await b.connect({ action: 'join', ...(await a.invite()), displayName: 'B' });
+  const aId = (await a.state()).memberId, bId = (await b.state()).memberId;
+  const { decision } = await a.decision('', { title: '首版登录', content: '仅邮箱登录', rationale: '先验证主流程', ownerId: aId });
+  await assert.rejects(b.decision(`/${decision.id}/confirm`, { expectedVersion: 1 }), /只有指定/);
+  await a.decision(`/${decision.id}/confirm`, { expectedVersion: 1 });
+  const drafts = createDraftStore(join(directory, 'b-drafts.json'));
+  const draft = await drafts.create({ title: '登录页面', completed: '完成邮箱登录页初稿', nextStep: '等待评审', blocker: '文案待确认', waitingOnIds: [aId], evidenceStage: 'review', decisionRefs: [{ id: decision.id, version: 1 }] }, 'ai');
+  assert.equal((await a.state()).team.updates.length, 0);
+  assert.equal((await createDraftStore(join(directory, 'a-drafts.json')).list()).length, 0);
+  await assert.rejects(drafts.save(draft.id, 0, draft), /另一页面更新/);
+  const published = await drafts.publish(draft.id, 1, b);
+  assert.equal(published.update.memberId, bId);
+  assert.equal((await a.state()).team.attention.waiting[0].waitingOnId, aId);
+  await assert.rejects(drafts.publish(draft.id, 1, b), /另一页面更新|已经发布/);
+  await a.decision(`/${decision.id}/revise`, { expectedVersion: 1, content: '邮箱加手机号登录', rationale: '访谈发现需要手机号' });
+  let current = (await b.state()).team;
+  assert.equal(current.decisions[0].effective.version, 1);
+  assert.equal(current.attention.reviewUpdateIds.length, 0);
+  await assert.rejects(a.decision(`/${decision.id}/revise`, { expectedVersion: 1, content: '覆盖', rationale: '旧版本' }), /版本已变化/);
+  await a.decision(`/${decision.id}/confirm`, { expectedVersion: 2 });
+  current = (await b.state()).team;
+  assert.equal(current.decisions[0].versions.length, 2);
+  assert.equal(current.decisions[0].effective.version, 2);
+  assert.deepEqual(current.attention.reviewUpdateIds, [published.update.id]);
+  const outdated = await drafts.create({ ...draft, completed: '旧依据的草稿' });
+  await assert.rejects(drafts.publish(outdated.id, 1, b), /决策已经更新/);
+  const reviewed = await drafts.save(outdated.id, 1, { ...outdated, completed: '已复核并调整为两种登录方式', decisionRefs: [{ id: decision.id, version: 2 }] });
+  await drafts.publish(reviewed.id, reviewed.revision, b);
+  assert.equal((await a.state()).team.attention.reviewUpdateIds.length, 0);
+});
+
+test('a lost publish response can be retried without duplicate team updates', async t => {
+  const directory = await mkdtemp(join(tmpdir(), 'team-retry-'));
+  const service = await startTeamServer({ port: 0 });
+  t.after(async () => { await service.close(); await rm(directory, { recursive: true }); });
+  const client = createTeamClient({ serviceUrl: service.url, bindingFile: join(directory, 'identity.json') });
+  await client.connect({ action: 'create', name: '重试验证', displayName: 'A' });
+  const drafts = createDraftStore(join(directory, 'drafts.json'));
+  const draft = await drafts.create({ completed: '已完成初稿' });
+  const lostResponse = { state: client.state, publish: async input => { await client.publish(input); throw new Error('模拟响应中断'); } };
+  await assert.rejects(drafts.publish(draft.id, 1, lostResponse), /模拟响应中断/);
+  await drafts.publish(draft.id, 1, client);
+  const state = await client.state();
+  assert.equal(state.team.updates.length, 1);
+  assert.equal(JSON.stringify(state).includes('payloadHash'), false);
+});
+
+test('AI formatting stays private and does not turn generated output into publication or acceptance', async t => {
+  const directory = await mkdtemp(join(tmpdir(), 'team-ai-'));
+  t.after(() => rm(directory, { recursive: true }));
+  const file = join(directory, 'ai.json');
+  await writeFile(file, JSON.stringify({ apiKey: 'test-only-key', model: 'test-model', baseURL: 'https://api.deepseek.com' }));
+  let request;
+  const output = { title: '页面工作', completed: '完成初稿', evidenceStage: 'accepted', waitingOnIds: [], decisionRefs: [] };
+  const state = { memberId: 'a', team: { members: [{ id: 'a', name: 'A' }], decisions: [] } };
+  const value = await generateDraft({ file, workNote: 'PRIVATE_NOTE: 完成页面初稿。', state, fetchImpl: async (_url, init) => {
+    request = JSON.parse(init.body);
+    return new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify(output) } }] }));
+  } });
+  assert.match(request.messages[1].content, /PRIVATE_NOTE/);
+  assert.equal(Object.hasOwn(value, 'evidenceStage'), false);
+  assert.equal(Object.hasOwn(value, 'status'), false);
+  assert.equal(JSON.stringify(value).includes('PRIVATE_NOTE'), false);
+  assert.equal(Object.hasOwn(value, 'publishedAt'), false);
+});
+
+test('share service protects creation, portable invitations preserve identity, and records have no task status', async t => {
+  const directory = await mkdtemp(join(tmpdir(), 'team-release-'));
+  const createKey = 'test-only-creation-key-1234567890';
+  const service = await startTeamServer({ port: 0, external: true, createKey });
+  t.after(async () => { await service.close(); await rm(directory, { recursive: true }); });
+  const a = createTeamClient({ serviceUrl: service.url, bindingFile: join(directory, 'a.json') });
+  const b = createTeamClient({ serviceUrl: service.url, bindingFile: join(directory, 'b.json') });
+  await assert.rejects(a.connect({ action: 'create', name: '空白团队', displayName: 'A' }), /创建口令/);
+  await a.connect({ action: 'create', name: '空白团队', displayName: 'A', createKey });
+  const blank = await a.state();
+  assert.equal(blank.team.updates.length, 0);
+  assert.equal(blank.team.decisions.length, 0);
+  const invitation = await a.invite();
+  await b.connect({ action: 'join', inviteCode: invitation.invitation, displayName: 'B' });
+  assert.equal((await b.state()).team.id, blank.team.id);
+  await b.publish({ kind: 'progress', text: '分享本轮思考' });
+  const update = (await a.state()).team.updates[0];
+  assert.equal(Object.hasOwn(update, 'status'), false);
+  assert.equal(Object.hasOwn(update, 'evidenceStage'), false);
+  await assert.rejects(b.publish({ kind: 'progress', text: '不生成任务状态', status: 'done' }), /未允许共享/);
+  await b.reconnect(service.url);
+  assert.equal((await b.state()).memberId, JSON.parse(await readFile(join(directory, 'b.json'))).memberId);
+  const crossOrigin = await fetch(`${service.url}/v1/team`, { headers: { Origin: 'https://example.com' } });
+  assert.equal(crossOrigin.status, 403);
+  assert.equal(JSON.stringify(await b.state()).includes(createKey), false);
+});
+
+test('external service addresses require HTTPS and invitations reject embedded credentials', async () => {
+  const { serviceAddress, invitationCode, parseInvitation, pluginConfig } = await import('../config.mjs');
+  assert.equal(pluginConfig({}, '/tmp/portable-profile').bindingFile, '/tmp/portable-profile/team-collaboration/identity.json');
+  const code = invitationCode('https://example.com', 'a'.repeat(32));
+  assert.deepEqual(parseInvitation(code), { serviceUrl: 'https://example.com', inviteCode: 'a'.repeat(32) });
+  for (const url of ['http://example.com', 'https://u:p@example.com', 'https://example.com/path', 'https://example.com/?key=secret']) assert.throws(() => serviceAddress(url));
+  assert.throws(() => parseInvitation('th1.invalid'), /邀请信息/);
+});
