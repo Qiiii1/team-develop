@@ -1,0 +1,29 @@
+name: UI Kit checks
+on:
+  push:
+    branches: [ui-kit, main]
+    paths: ['ui-kit/**', '.github/workflows/ui-kit.yml']
+  pull_request:
+    paths: ['ui-kit/**', '.github/workflows/ui-kit.yml']
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ui-kit
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: ui-kit/package-lock.json
+      - run: npm ci
+      - run: npm run check
+      - run: npm run pack:ui
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ok-ah-ui-package
+          path: ui-kit/*.tgz

@@ -86,3 +86,15 @@ npm test
 
 这是本机单人原型，服务仅监听 127.0.0.1。多人登录、真实同步、云端部署、主动介入和工具执行属于后续版本。
 
+
+## UI Kit 组件库
+
+基于「OK啊」个人 AI 页面的 React + TypeScript 组件库位于 [ui-kit/](ui-kit/README.md)。包含 15 个可复用组件、设计变量、组件展示和个人 AI 示例；与现有应用独立安装、独立构建。
+
+```sh
+cd ui-kit
+npm ci
+npm run dev
+```
+
+检查和打包：`npm run check`、`npm run pack:ui`。协作与版本管理见 [UI Kit 文档](ui-kit/docs/versioning.md)。
