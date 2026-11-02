@@ -9,7 +9,7 @@ import{grantSystemAdmin}from'../src/admin-access.js';
 
 test('static subdirectory frontend talks to a separate API, restores login and loads hash-admin',async({browser})=>{
   const directory=await mkdtemp(join(tmpdir(),'harness-pages-ui-'));const output=join(directory,'site');
-  const files=new Map([['index.html','text/html'],['config.js','text/javascript'],['app.js','text/javascript'],['admin.js','text/javascript'],['styles.css','text/css'],['favicon.svg','image/svg+xml']]);
+  const files=new Map([['index.html','text/html'],['config.js','text/javascript'],['app.js','text/javascript'],['admin.js','text/javascript'],['collaboration.js','text/javascript'],['styles.css','text/css'],['favicon.svg','image/svg+xml']]);
   const front=createServer(async(req,res)=>{const name=req.url?.replace(/^\/project\//,'')||'index.html';const file=name===''?'index.html':name;
     if(!files.has(file)){res.writeHead(404);res.end();return;}
     try{res.writeHead(200,{'Content-Type':files.get(file)});res.end(await readFile(join(output,file)));}catch{res.writeHead(503);res.end();}});

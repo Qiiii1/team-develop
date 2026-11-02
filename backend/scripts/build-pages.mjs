@@ -10,7 +10,7 @@ if (url.username || url.password || url.pathname !== '/' || url.hash || url.sear
   (url.protocol !== 'https:' && !(process.env.PAGES_ALLOW_LOCAL_API === '1' && local && url.protocol === 'http:'))) throw new Error('API 地址必须是没有路径、凭据和参数的 HTTPS Origin。');
 const output = resolve(process.env.PAGES_OUT_DIR ?? '.local/pages-site');
 mkdirSync(output, { recursive: true });
-for (const name of ['app.js','admin.js','styles.css','favicon.svg']) copyFileSync(resolve('web', name), resolve(output, name));
+for (const name of ['app.js','admin.js','collaboration.js','styles.css','favicon.svg']) copyFileSync(resolve('web', name), resolve(output, name));
 const policy = `default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' ${previewOnly?'':url.origin}; object-src 'none'; base-uri 'self'; form-action 'self'`;
 const html = readFileSync('web/index.html','utf8').replace('<meta charset="utf-8">', `<meta charset="utf-8">\n  <meta name="referrer" content="no-referrer">\n  <meta http-equiv="Content-Security-Policy" content="${policy}">`);
 writeFileSync(resolve(output, 'index.html'), html);

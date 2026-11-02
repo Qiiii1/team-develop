@@ -30,6 +30,7 @@ test('two browsers create/join a team, keep separate Keys, and work at desktop/m
     await owner.getByLabel('团队名称', { exact: true }).fill('第一次团队试用');
     await owner.getByRole('button', { name: '创建团队', exact: true }).click();
     await expect(owner.getByRole('heading', { name: '第一次团队试用' })).toBeVisible();
+    await owner.getByText('成员与邀请 · 1 人', { exact: true }).click();
     await owner.getByRole('button', { name: '生成邀请码', exact: true }).click();
     const invitation = await owner.locator('#invite-token').inputValue();
     expect(invitation).toHaveLength(43);
@@ -37,6 +38,7 @@ test('two browsers create/join a team, keep separate Keys, and work at desktop/m
     await member.getByLabel('邀请码', { exact: true }).fill(invitation);
     await member.getByRole('button', { name: '加入团队', exact: true }).click();
     await expect(member.getByRole('heading', { name: '第一次团队试用' })).toBeVisible();
+    await member.getByText('成员与邀请 · 2 人', { exact: true }).click();
     await expect(member.getByText('队友小林 · 我', { exact: true })).toBeVisible();
     await owner.getByRole('button', { name: '刷新成员' }).click();
     await expect(owner.getByText('队友小林', { exact: true })).toBeVisible();
@@ -51,6 +53,7 @@ test('two browsers create/join a team, keep separate Keys, and work at desktop/m
     await member.getByRole('button', { name: '保存配置', exact: true }).click();
     await expect(member.getByText('已保存配置', { exact: true })).toBeVisible();
     await owner.getByRole('button', { name: '团队空间', exact: true }).click();
+    await owner.getByText('成员与邀请 · 2 人', { exact: true }).click();
     await owner.getByRole('button', { name: '设为管理员', exact: true }).click();
     await expect(owner.getByRole('button', { name: '收回管理权限' })).toBeVisible();
     await mkdir('artifacts', { recursive: true });

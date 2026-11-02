@@ -25,7 +25,7 @@ const { app } = await createApp({ dataDirectory: resolve(process.env.HARNESS_WEB
 try { await app.listen({ host, port }); }
 catch (error) { await app.close(); throw error; }
 const activePort = (app.server.address() as { port: number }).port, scheme = tls ? 'https' : 'http';
-console.log(`Team Develop M1: ${scheme}://localhost:${activePort}`);
+console.log(`Team Develop: ${scheme}://localhost:${activePort}`);
 if (host === '0.0.0.0' || addresses.includes(host)) {
   for (const address of host === '0.0.0.0' ? addresses : [host]) console.log(`LAN: ${scheme}://${address}:${activePort}`);
 }

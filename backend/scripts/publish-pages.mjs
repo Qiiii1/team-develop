@@ -6,7 +6,7 @@ const repo = process.env.HARNESS_PAGES_REPOSITORY;
 if (!repo || !/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repo)) throw new Error('设置 HARNESS_PAGES_REPOSITORY=所有者/仓库名 后再发布。');
 const output = resolve('.local/pages-site');
 execFileSync(process.execPath, ['backend/scripts/build-pages.mjs'], { stdio:'inherit', env:{...process.env,PAGES_OUT_DIR:output} });
-const files=['index.html','app.js','admin.js','config.js','styles.css','favicon.svg','.nojekyll','README.md'];
+const files=['index.html','app.js','admin.js','collaboration.js','config.js','styles.css','favicon.svg','.nojekyll','README.md'];
 for(const file of files){
   const data=readFileSync(resolve(output,file),'utf8');
   if(/-----BEGIN (?:RSA |EC )?PRIVATE KEY-----/.test(data))throw new Error('发布目录包含私钥，已停止。');

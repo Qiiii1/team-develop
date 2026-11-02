@@ -7,6 +7,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { openDatabase } from './database.js';
 import { registerAdminRoutes } from './admin.js';
+import { registerCollaborationRoutes, type ModelProvider } from './collaboration.js';
 import { aiConfigs, sessions, teamInvites, teamMembers, teams, users } from './schema.js';
 import { csrfToken, decryptKey, digest, encryptKey, equal, hashPassword, loadMasterKey, token, verifyPassword } from './security.js';
 
@@ -37,6 +38,7 @@ export type AppOptions = {
   dataDirectory?: string; dbPath?: string; keyPath?: string; masterKey?: string;
   allowedHosts?: string[]; allowedOrigins?: string[]; tls?: { key: Buffer; cert: Buffer }; rateLimits?: boolean;
   migrationsPath?: string; webRoot?: string; now?: () => number;
+  modelProvider?: ModelProvider;
 };
 
 export async function createApp(options: AppOptions = {}) {
@@ -62,9 +64,9 @@ export async function createApp(options: AppOptions = {}) {
   await app.register(rateLimit, { global: false, errorResponseBuilder: () => new ApiError(429, '操作过于频繁，请稍后重试。') });
   app.setErrorHandler((caught, _req, reply) => {
     const error = (caught instanceof Error ? caught : new Error('Unknown error')) as FastifyError;
-    const code = error.validation ? 400 : error.statusCode && error.statusCode >= 400 && error.statusCode < 500 ? error.statusCode : 500;
+    const code = error.validation ? 400 : error.statusCode && error.statusCode >= 400 && error.statusCode <= 599 ? error.statusCode : 500;
     const message = error.validation ? '填写内容不符合要求，请检查字段、长度或格式。'
-      : code === 500 ? '服务暂时不可用，请稍后重试。' : error.message;
+      : code >= 500 && !(error instanceof ApiError) ? '服务暂时不可用，请稍后重试。' : error.message;
     reply.code(code).send({ error: message });
   });
   app.setNotFoundHandler((_req, reply) => reply.code(404).send({ error: '没有找到这个页面或接口。' }));
@@ -293,12 +295,13 @@ export async function createApp(options: AppOptions = {}) {
   }, configResponse, object({ revision: { type: 'integer', minimum: 0 } }));
   app.options('/api/*', (_req, reply) => reply.code(204).send());
   registerAdminRoutes(app, db, now);
+  registerCollaborationRoutes(app, sqlite, { masterKey, now, fail, member, provider: options.modelProvider, rateLimits: options.rateLimits });
   app.get('/admin/', (_req, reply) => reply.redirect('/admin'));
   app.get('/health', { schema: { response: { 200: ok } } }, () => ({ ok: true }));
   // Only these public assets can be served; backend files and data directories are never mounted.
   for (const [url, file, type] of [
     ['/', 'index.html', 'text/html; charset=utf-8'], ['/admin', 'index.html', 'text/html; charset=utf-8'],  ['/app.js', 'app.js', 'text/javascript; charset=utf-8'], ['/config.js', 'config.js', 'text/javascript; charset=utf-8'],
-    ['/styles.css', 'styles.css', 'text/css; charset=utf-8'], ['/admin.js', 'admin.js', 'text/javascript; charset=utf-8'], ['/favicon.svg', 'favicon.svg', 'image/svg+xml'],
+    ['/collaboration.js', 'collaboration.js', 'text/javascript; charset=utf-8'], ['/styles.css', 'styles.css', 'text/css; charset=utf-8'], ['/admin.js', 'admin.js', 'text/javascript; charset=utf-8'], ['/favicon.svg', 'favicon.svg', 'image/svg+xml'],
   ]) {
     const content = readFileSync(resolve(options.webRoot ?? 'web', file));
     app.route({ method: ['GET', 'HEAD'], url, handler: (_req, reply) => reply.header('Cache-Control', 'no-cache').type(type).send(content) });
