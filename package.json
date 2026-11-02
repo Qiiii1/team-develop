@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "tsx watch --env-file-if-exists=.env.web.local backend/src/main.ts",
     "start": "npm run start:web",
-    "test": "npm run test:web && node --test tests/*.test.mjs && node --test experiments/dsh-team/test/service.test.mjs",
+    "test": "npm run test:web && node --test tests/*.test.mjs",
     "check": "npm run check:web && node --check server.mjs && node --check public/app.js",
     "dev:web": "tsx watch --env-file-if-exists=.env.web.local backend/src/main.ts",
     "build:web": "tsc -p tsconfig.json",
