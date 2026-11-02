@@ -19,7 +19,11 @@ const remote=execFileSync('git',['-C',output,'remote','get-url','origin'],{encod
 if(remote!==`https://github.com/${repo}.git`)throw new Error('发布目录关联了其他仓库，已停止。');
 git(['add','--',...files]);
 const changes=execFileSync('git',['-C',output,'diff','--cached','--name-only'],{encoding:'utf8'}).trim();
-if(changes)git(['-c','user.name=Team Develop','-c','user.email=noreply@users.noreply.github.com','commit','-m','Publish standalone Pages frontend']);
+if(changes){
+  const profile=JSON.parse(execFileSync('gh',['api','user'],{encoding:'utf8'}));
+  const email=`${profile.id}+${profile.login}@users.noreply.github.com`;
+  git(['-c',`user.name=${profile.login}`,'-c',`user.email=${email}`,'commit','-m','Publish standalone Pages frontend']);
+}
 git(['-c','credential.helper=','-c','credential.helper=!gh auth git-credential','push','-u','origin','HEAD:refs/heads/codex/pages']);
 const endpoint=`repos/${repo}/pages`;
 let method='PATCH';
