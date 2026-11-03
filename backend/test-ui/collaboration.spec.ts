@@ -1,0 +1,100 @@
+import { test, expect } from '@playwright/test';
+import { mkdtemp, rm, mkdir } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { createApp } from '../src/app.js';
+import type { ModelRequest } from '../src/collaboration.js';
+
+test('two members complete private AI, reviewed sharing, public @AI and nominated version confirmation', async ({ browser }) => {
+  const directory = await mkdtemp(join(tmpdir(), 'develop-core-ui-'));
+  const calls: ModelRequest[] = [];
+  const { app } = await createApp({ dataDirectory: directory, rateLimits: false, modelProvider: async request => {
+    calls.push(request);
+    return { content: request.messages[0].content.includes('私人工作区') ? 'PRIVATE_AI_DRAFT：先验证团队目标，再整理可共享摘要。' : 'PUBLIC_AI_REPLY：建议把共同目标整理成草案，请指定成员确认。', inputTokens: 30, outputTokens: 20 };
+  } });
+  const ca = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
+  const cb = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+  const errors: string[] = [];
+  try {
+    const origin = await app.listen({ host: '127.0.0.1', port: 0 });
+    async function register(context: typeof ca, username: string) {
+      const response = await context.request.post(`${origin}/api/v1/auth/register`, { data: { username, displayName: username, password: 'pass1234' } });
+      expect(response.status()).toBe(201); const data = await response.json();
+      const saved = await context.request.put(`${origin}/api/v1/me/ai-config`, { data: { provider: 'deepseek', model: 'deepseek-flash', revision: 0, apiKey: `fixture-${username}-own-key` }, headers: { 'X-CSRF-Token': data.csrfToken } });
+      expect(saved.status()).toBe(200); return data;
+    }
+    const owner = await register(ca, 'owner'), member = await register(cb, 'member');
+    const created = await ca.request.post(`${origin}/api/v1/teams`, { data: { name: '新版核心协作' }, headers: { 'X-CSRF-Token': owner.csrfToken } });
+    const team = await created.json();
+    const invitation = await (await ca.request.post(`${origin}/api/v1/teams/${team.id}/invites`, { data: {}, headers: { 'X-CSRF-Token': owner.csrfToken } })).json();
+    await cb.request.post(`${origin}/api/v1/teams/join`, { data: { token: invitation.token }, headers: { 'X-CSRF-Token': member.csrfToken } });
+    const a = await ca.newPage(), b = await cb.newPage();
+    for (const page of [a,b]) {
+      page.on('pageerror', error => errors.push(error.message)); page.on('dialog', dialog => void dialog.accept());
+      await page.goto(origin); await page.getByRole('button', { name: /新版核心协作/ }).click();
+      await expect(page.getByRole('tab', { name: '公共讨论', exact: true })).toBeVisible();
+    }
+    await a.getByRole('tab', { name: '个人 AI 工作区' }).click();
+    await a.getByLabel('对话名称', { exact: true }).fill('个人调研'); await a.getByRole('button', { name: '新建个人对话' }).click();
+    await a.getByLabel('给我的 AI 发消息').fill('PRIVATE_FULL_MESSAGE 这段完整对话不公开'); await a.getByRole('button', { name: '发送给 AI' }).click();
+    await expect(a.getByText('PRIVATE_AI_DRAFT：先验证团队目标，再整理可共享摘要。', { exact: true })).toBeVisible();
+    expect(calls).toHaveLength(1); expect(calls[0].apiKey).toBe('fixture-owner-own-key');
+    await b.getByRole('tab', { name: '个人 AI 工作区' }).click();
+    await expect(b.getByText('还没有个人对话。', { exact: true })).toBeVisible();
+    await expect(b.getByText('PRIVATE_FULL_MESSAGE', { exact: false })).toHaveCount(0);
+    await a.locator('.chat-message.assistant').getByRole('button', { name: '作为分享草稿' }).click();
+    await a.getByLabel('成果标题', { exact: true }).fill('调研摘要');
+    await a.getByLabel('成果摘要', { exact: true }).fill('PUBLIC_SUMMARY：我们需要先对齐目标，再共享成果。');
+    await a.getByRole('button', { name: '预览发布' }).click();
+    await expect(a.getByRole('heading', { name: '发布前预览' })).toBeVisible();
+    const before = await (await cb.request.get(`${origin}/api/v1/teams/${team.id}/shares`)).json(); expect(before.shares).toHaveLength(0);
+    await a.getByRole('button', { name: '确认发布', exact: true }).click();
+    await expect(a.locator('.shared-entry').getByText('PUBLIC_SUMMARY：我们需要先对齐目标，再共享成果。', { exact: true })).toBeVisible();
+    await b.getByRole('tab', { name: '共享成果' }).click();
+    await expect(b.locator('.shared-entry').getByRole('heading', { name: '调研摘要' })).toBeVisible();
+    expect(JSON.stringify((await (await cb.request.get(`${origin}/api/v1/teams/${team.id}/shares`)).json()))).not.toContain('PRIVATE_FULL_MESSAGE');
+    await a.getByRole('tab', { name: '背景与决定' }).click();
+    await a.getByLabel('草案标题', { exact: true }).fill('共同目标'); await a.getByLabel('草案内容', { exact: true }).fill('目标 v1：团队信息同步与共同理解。');
+    await a.getByLabel('指定确认人', { exact: true }).selectOption(member.user.id);
+    await a.getByRole('button', { name: '提交待确认草案' }).click();
+    await expect(a.getByText('待指定成员确认', { exact: true })).toBeVisible();
+    await expect(a.getByRole('button', { name: '确认生效', exact: true })).toHaveCount(0);
+    await b.getByRole('tab', { name: '背景与决定' }).click(); await b.getByRole('button', { name: '确认生效', exact: true }).click();
+    await expect(b.getByText('当前生效', { exact: true })).toBeVisible();
+    await a.getByRole('tab', { name: '个人 AI 工作区' }).click();
+    await expect(a.locator('#context-warning')).toContainText('团队资料已更新到 v2');
+    await a.locator('.chat-message.assistant').getByRole('button', { name: '作为分享草稿' }).click();
+    await a.getByLabel('成果标题', { exact: true }).fill('旧资料成果复核');
+    await a.getByLabel('成果摘要', { exact: true }).fill('保留原依据，已复核当前目标变化。');
+    await expect(a.getByText('原依据 v0', { exact: true })).toBeVisible();
+    await a.getByLabel('复核说明', { exact: true }).fill('已阅读新目标，原有方法仍然适用。');
+    await a.getByRole('button', { name: '预览发布' }).click(); await a.getByRole('button', { name: '确认发布', exact: true }).click();
+    await expect(a.locator('.shared-entry').getByRole('heading', { name: '旧资料成果复核' })).toBeVisible();
+    await a.getByRole('tab', { name: '个人 AI 工作区' }).click();
+    await a.locator('#context-warning').getByRole('button', { name: '采用当前资料 v3' }).click();
+    await expect(a.locator('#context-warning')).toBeEmpty();
+    await expect(a.getByText('PRIVATE_FULL_MESSAGE 这段完整对话不公开', { exact: true })).toBeVisible();
+    await a.getByRole('tab', { name: '公共讨论', exact: true }).click();
+    await a.getByLabel('团队消息', { exact: true }).fill('普通团队讨论不会调用 AI'); await a.getByRole('button', { name: '发送消息', exact: true }).click();
+    await expect(a.getByText('普通团队讨论不会调用 AI', { exact: true })).toBeVisible(); expect(calls).toHaveLength(1);
+    await b.getByRole('tab', { name: '公共讨论', exact: true }).click();
+    await b.getByLabel('团队消息', { exact: true }).fill('@AI 帮我们解释当前目标'); await b.getByRole('button', { name: '发送消息', exact: true }).click();
+    await expect(b.getByText('PUBLIC_AI_REPLY：建议把共同目标整理成草案，请指定成员确认。', { exact: true })).toBeVisible();
+    expect(calls).toHaveLength(2); expect(calls[1].apiKey).toBe('fixture-member-own-key');
+    expect(JSON.stringify(calls[1].messages)).not.toContain('PRIVATE_FULL_MESSAGE'); expect(JSON.stringify(calls[1].messages)).not.toContain('PRIVATE_AI_DRAFT');
+    expect(JSON.stringify(calls[1].messages)).toContain('PUBLIC_SUMMARY'); expect(JSON.stringify(calls[1].messages)).toContain('目标 v1');
+    await expect(a.getByText('PUBLIC_AI_REPLY：建议把共同目标整理成草案，请指定成员确认。', { exact: true })).toBeVisible({ timeout: 10000 });
+    await a.getByRole('tab', { name: '背景与决定' }).click(); await a.getByRole('button', { name: '提出修订', exact: true }).click();
+    await a.getByLabel('草案内容', { exact: true }).fill('目标 v2：完成可验证的多人协作闭环。');
+    await a.getByRole('button', { name: '提交待确认草案' }).click();
+    await b.getByRole('tab', { name: '背景与决定' }).click(); await b.getByRole('button', { name: '确认生效', exact: true }).click();
+    await expect(b.getByText('目标 v2：完成可验证的多人协作闭环。', { exact: true })).toBeVisible();
+    await b.getByText('查看版本历史（已载入 2 版）', { exact: true }).click();
+    await expect(b.getByText('目标 v1：团队信息同步与共同理解。', { exact: true })).toBeVisible();
+    await mkdir('artifacts', { recursive: true }); await b.screenshot({ path: 'artifacts/core-collaboration-desktop.png', fullPage: true });
+    await a.getByRole('tab', { name: '个人 AI 工作区' }).click(); await a.setViewportSize({ width: 375, height: 812 });
+    expect(await a.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375);
+    await a.screenshot({ path: 'artifacts/core-collaboration-mobile.png', fullPage: true });
+    expect(errors).toEqual([]);
+  } finally { await ca.close(); await cb.close(); await app.close(); await rm(directory, { recursive: true, force: true }); }
+});

@@ -1,0 +1,45 @@
+{
+  "name": "team-develop-prototype",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "description": "本机部署、局域网协作的团队 AI 空间",
+  "scripts": {
+    "dev": "tsx watch --env-file-if-exists=.env.web.local backend/src/main.ts",
+    "start": "npm run start:web",
+    "test": "npm run test:web && node --test tests/*.test.mjs",
+    "check": "npm run check:web && node --check server.mjs && node --check public/app.js",
+    "dev:web": "tsx watch --env-file-if-exists=.env.web.local backend/src/main.ts",
+    "build:web": "tsc -p tsconfig.json",
+    "start:web": "npm run build:web && node --env-file-if-exists=.env.web.local dist/backend/main.js",
+    "test:web": "node --import tsx --test backend/test/*.test.ts",
+    "test:browser": "playwright test",
+    "db:generate": "drizzle-kit generate",
+    "check:web": "tsc -p tsconfig.json --noEmit && node --check web/app.js && node --check web/admin.js && node --check web/collaboration.js",
+    "start:legacy": "node --env-file-if-exists=.env.local server.mjs",
+    "dev:legacy": "node --env-file-if-exists=.env.local --watch server.mjs",
+    "admin:grant": "npm run build:web && node --env-file-if-exists=.env.web.local dist/backend/admin-cli.js",
+    "setup:lan": "node --env-file-if-exists=.env.web.local backend/scripts/setup-lan.mjs",
+    "build:pages": "node backend/scripts/build-pages.mjs",
+    "publish:pages": "node --env-file-if-exists=.env.web.local backend/scripts/publish-pages.mjs",
+    "share:pages": "npm run build:web && node --env-file-if-exists=.env.web.local backend/scripts/share-pages.mjs"
+  },
+  "engines": {
+    "node": ">=22.9.0"
+  },
+  "dependencies": {
+    "@fastify/cookie": "11.1.5",
+    "@fastify/rate-limit": "11.2.1",
+    "better-sqlite3": "13.0.3",
+    "drizzle-orm": "0.45.4",
+    "fastify": "5.12.7"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.64.1",
+    "@types/better-sqlite3": "9.6.0",
+    "@types/node": "26.6.6",
+    "drizzle-kit": "0.31.11",
+    "tsx": "4.23.15",
+    "typescript": "7.0.2"
+  }
+}

@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f5f5f7">
+  <title>团队 Develop · 项目对话</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <div class="harness-shell">
+    <aside class="sidebar" aria-label="项目导航">
+      <a class="brand" href="/" aria-label="团队 Develop 首页"><span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span><strong>Develop</strong></a>
+      <nav class="sidebar-nav" aria-label="项目页面">
+        <div class="nav-primary">
+          <button class="nav-link active" data-view="chat" aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5H4l-3 3v-10A8.5 8.5 0 0 1 9.5 4h3a8.5 8.5 0 0 1 8.5 7.5Z"/><path d="M7 10h8M7 14h5"/></svg><span>项目对话</span></button>
+          <button class="nav-link team-nav" data-view="office"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3 21v-3a6 6 0 0 1 12 0v3M16 5a3 3 0 0 1 0 6M17 15a5 5 0 0 1 4 5v1"/></svg><span>团队情况</span><span class="nav-count" id="team-nav-count"></span></button>
+        </div>
+        <div class="project-nav-heading">当前项目</div>
+        <button class="project-button" id="project-settings" aria-label="编辑项目设置"><span class="project-icon" aria-hidden="true">H</span><span id="project-name">正在打开项目…</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg></button>
+        <div class="nav-secondary">
+          <button class="nav-link" data-view="tasks"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 6 2 2 4-4M12 6h9M3 12h6M12 12h9M3 18h6M12 18h9"/></svg><span>项目任务</span></button>
+          <button class="nav-link" data-view="decisions"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M8 13h8M8 17h5"/></svg><span>关键结论</span><span class="nav-count" id="decision-count">0</span></button>
+        </div>
+      </nav>
+      <div class="sidebar-bottom">
+        <button class="connection-nav" id="ai-settings" aria-label="配置 DeepSeek"><span class="connection-indicator" aria-hidden="true"></span><span class="connection-nav-label">DeepSeek<span class="ai-status" id="ai-status">正在检查连接…</span></span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg></button>
+        <div class="profile"><span class="self-avatar" id="self-avatar" aria-label="当前成员">你</span><div><strong id="self-name">你</strong><span>个人试用</span></div><span class="local-label">本地</span></div>
+        <span class="save-status" id="save-status">所有修改保存在本机</span>
+      </div>
+    </aside>
+
+    <main class="main-workspace">
+      <header class="workspace-header"><div class="workspace-location"><span id="header-project-name">我的项目</span><span class="breadcrumb-separator" aria-hidden="true">/</span><h1 id="page-title">项目对话</h1></div><button class="team-shortcut" data-view="office" aria-label="查看团队情况"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3 21v-3a6 6 0 0 1 12 0v3M16 5a3 3 0 0 1 0 6M17 15a5 5 0 0 1 4 5v1"/></svg><span>团队情况</span></button></header>
+
+      <section id="chat-view" class="view chat-view" aria-label="项目管家对话">
+        <div class="messages" id="messages" aria-live="polite" aria-relevant="additions"></div>
+        <div class="composer-area">
+          <div class="chat-error hidden" id="chat-error" role="alert"></div>
+          <div class="quick-prompts"><button data-prompt="请总结当前项目进度，指出已完成、进行中和被阻塞的工作。">总结项目进度</button><button data-prompt="请根据项目任务找出当前阻塞，并给出需要谁配合的建议。">一起梳理阻塞</button><button data-prompt="根据当前项目目标和我的任务，建议我接下来优先做什么，并解释原因。">讨论下一步</button></div>
+          <div class="chat-composer">
+            <form id="chat-form"><label for="chat-input" class="sr-only">发给项目管家的消息</label><textarea id="chat-input" placeholder="告诉管家，你想推进什么…" rows="2" maxlength="6000"></textarea><div class="composer-bottom"><button class="context-button" type="button" data-action="project-settings"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 20H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2Z"/></svg>项目背景</button><div class="composer-controls"><span class="model-label" id="chat-model">DeepSeek</span><button class="send-button" id="send-message" type="submit" aria-label="发送消息">↑</button></div></div></form>
+          </div>
+          <div class="composer-note"><span>Enter 发送 · Shift + Enter 换行</span><span>AI 提供建议，由你确认。</span></div>
+        </div>
+      </section>
+
+      <section id="office-view" class="view content-view hidden">
+        <div class="section-heading"><div><h2>团队情况 <span class="small-count" id="member-count"></span></h2></div><div class="section-actions"><button class="button quiet small" id="add-member">＋ 模拟成员</button><button class="button primary small" data-action="new-task">＋ 新建任务</button></div></div>
+        <div class="team-layout">
+          <div class="office-map"><div class="map-caption"><span>项目办公室</span><span class="map-label">模拟团队</span></div><div class="seats" id="seats"></div><div class="office-legend"><span><i class="legend-dot selected-dot"></i>当前选中</span><span><i class="legend-dot blocked-dot"></i>需要协助</span><span>点击工位，查看成员任务</span></div></div>
+          <aside class="team-inspector" aria-label="进度与成员任务">
+            <section class="progress-summary"><h3>项目进度</h3><div class="progress-label"><span>任务完成</span><strong id="progress-value">—</strong></div><div class="progress-track"><div id="progress-fill"></div></div><span class="progress-note" id="progress-note">创建任务后显示进度</span><div class="status-overview"><div><strong id="overview-todo">0</strong><span>待开始</span></div><div><strong id="overview-doing">0</strong><span>进行中</span></div><div><strong id="overview-blocked">0</strong><span>被阻塞</span></div></div><button class="text-button" data-view="tasks">查看全部任务 ↗</button></section>
+            <section class="member-detail" id="member-detail" aria-live="polite"></section>
+          </aside>
+        </div>
+      </section>
+
+      <section id="tasks-view" class="view content-view narrow-view hidden">
+        <div class="section-heading"><div><h2>项目任务 <span class="small-count" id="task-count"></span></h2></div><button class="button primary small" data-action="new-task">＋ 新建任务</button></div>
+        <div class="task-toolbar"><div class="filter-group" id="task-filters" aria-label="筛选任务状态"><button data-filter="all" class="filter active">全部</button><button data-filter="todo" class="filter">待开始</button><button data-filter="doing" class="filter">进行中</button><button data-filter="blocked" class="filter">被阻塞</button><button data-filter="done" class="filter">已完成</button></div><label class="owner-filter"><span class="sr-only">筛选负责人</span><select id="owner-filter"></select></label></div>
+        <div class="task-list" id="task-list"></div>
+      </section>
+
+      <section id="decisions-view" class="view content-view narrow-view hidden">
+        <div class="section-heading"><div><h2>关键结论 <span class="small-count" id="decision-total"></span></h2></div><button class="button primary small" id="new-decision">＋ 记录结论</button></div>
+        <div class="decision-list" id="decision-list"></div>
+      </section>
+    </main>
+  </div>
+
+  <dialog id="project-dialog" class="modal">
+    <form id="project-form"><div class="modal-heading"><div><div class="eyebrow">PROJECT SETTINGS</div><h2>编辑项目</h2></div><button type="button" class="icon-button" data-close aria-label="关闭">×</button></div><label>项目名称<input name="name" required maxlength="80"></label><label>项目目标<textarea name="goal" required maxlength="3000" rows="3"></textarea></label><label>项目简介<textarea name="description" maxlength="3000" rows="3"></textarea></label><p class="form-hint">保存后，管家会在下一次对话中参考新的项目背景。</p><p class="form-error" role="alert"></p><div class="modal-actions"><button class="button quiet" type="button" data-close>取消</button><button class="button primary" type="submit">保存项目</button></div></form>
+  </dialog>
+
+  <dialog id="task-dialog" class="modal">
+    <form id="task-form"><div class="modal-heading"><div><div class="eyebrow">PROJECT TASK</div><h2 id="task-dialog-title">新建任务</h2></div><button type="button" class="icon-button" data-close aria-label="关闭">×</button></div><label>任务名称<input name="title" required maxlength="120" placeholder="这次需要完成什么？"></label><div class="form-row"><label>负责人<select name="ownerId" required></select></label><label>任务状态<select name="status"><option value="todo">待开始</option><option value="doing">进行中</option><option value="blocked">被阻塞</option><option value="done">已完成</option></select></label></div><label>截止日期 <span class="optional">可选</span><input type="date" name="due"></label><label>任务说明 <span class="optional">可选</span><textarea name="description" rows="3" maxlength="3000" placeholder="交付内容、阻塞原因或验收标准"></textarea></label><label>成果链接 <span class="optional">可选</span><input name="link" type="url" maxlength="1000" placeholder="https://…"></label><p class="form-error" role="alert"></p><div class="modal-actions"><button class="button danger-text" type="button" id="delete-task">删除任务</button><span></span><button class="button quiet" type="button" data-close>取消</button><button class="button primary" type="submit">保存任务</button></div></form>
+  </dialog>
+
+  <dialog id="member-dialog" class="modal compact-modal">
+    <form id="member-form"><div class="modal-heading"><div><div class="eyebrow">TEAM MEMBER</div><h2 id="member-dialog-title">编辑成员</h2></div><button type="button" class="icon-button" data-close aria-label="关闭">×</button></div><label>成员姓名<input name="name" required maxlength="30"></label><label>项目角色<input name="role" required maxlength="50" placeholder="例如：产品设计"></label><p class="form-hint" id="member-hint">模拟成员用于体验工位与分工。</p><p class="form-error" role="alert"></p><div class="modal-actions"><button class="button danger-text" type="button" id="delete-member">删除成员</button><span></span><button class="button quiet" type="button" data-close>取消</button><button class="button primary" type="submit">保存成员</button></div></form>
+  </dialog>
+
+  <dialog id="decision-dialog" class="modal">
+    <form id="decision-form"><div class="modal-heading"><div><div class="eyebrow">PROJECT MEMORY</div><h2 id="decision-dialog-title">记录结论</h2></div><button type="button" class="icon-button" data-close aria-label="关闭">×</button></div><label>结论标题<input name="title" required maxlength="120" placeholder="用一句话概括这次决定"></label><label>结论内容<textarea name="content" rows="6" required maxlength="6000" placeholder="我们决定了什么？为什么？"></textarea></label><p class="form-hint" id="decision-source">只有你确认保存的内容，才会成为项目结论。</p><p class="form-error" role="alert"></p><div class="modal-actions"><button class="button danger-text" type="button" id="delete-decision">删除结论</button><span></span><button class="button quiet" type="button" data-close>取消</button><button class="button primary" type="submit">确认保存</button></div></form>
+  </dialog>
+
+  <dialog id="connection-dialog" class="modal compact-modal">
+    <form id="connection-form" autocomplete="off">
+      <div class="modal-heading"><div><h2>连接 DeepSeek</h2><p class="connection-subtitle">让项目管家加入你的团队。</p></div><button type="button" class="icon-button" data-close aria-label="关闭">×</button></div>
+      <div class="connection-key"><label for="deepseek-key">API Key</label><div class="key-input"><input id="deepseek-key" name="apiKey" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="512" placeholder="输入你的 DeepSeek API Key"><button type="button" class="key-toggle" id="toggle-api-key" aria-label="显示 API Key" aria-pressed="false">显示</button></div></div>
+      <p class="form-hint" id="connection-key-hint">Key 仅保存在本机，用于请求 DeepSeek。</p>
+      <details class="connection-advanced"><summary>高级设置</summary><label>模型名称<input name="model" required maxlength="80" autocomplete="off" spellcheck="false" value="deepseek-flash"></label><label>接口地址<input name="baseURL" type="url" required maxlength="1000" autocomplete="off" spellcheck="false" value="https://api.deepseek.com"></label></details>
+      <p class="connection-save-note">保存后立即生效，无需重启。有效性将在对话时验证。</p>
+      <p class="form-error" role="alert"></p>
+      <div class="modal-actions"><button class="button quiet" type="button" data-close>取消</button><button class="button primary" type="submit">保存并启用</button></div>
+    </form>
+  </dialog>
+  <div id="toast" class="toast hidden" role="status"></div>
+</body>
+</html>
