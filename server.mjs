@@ -2,6 +2,7 @@ import {handleMaterialApi} from './material-api.mjs';
 import http from 'node:http';
 import { readFile } from 'node:fs/promises';
 const routes = new Map([
+  ['/persistent-shell.js', ['persistent-shell.js', 'text/javascript; charset=utf-8']],
   ['/onboarding.js', ['onboarding.js', 'text/javascript; charset=utf-8']],
   ['/', ['index.html', 'text/html; charset=utf-8']],
   ['/index.html', ['index.html', 'text/html; charset=utf-8']],
