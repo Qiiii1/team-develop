@@ -1,0 +1,443 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>初始页 · 建筑模型版</title>
+<style>
+:root{--ok-ink:#17191d;--ok-muted:#858991;--ok-line:#e8e9e8;--ok-paper:#f7f7f7;--ok-white:#fff;--ok-lime:#dfff73;--ok-lav:#6658e8;--ok-soft:#f3f4f1;--ok-sidebar:#f0f0eb;--ok-radius-sm:10px;--ok-radius-md:14px;--ok-radius-lg:18px;--ok-font:"PingFang SC","Noto Sans SC","Microsoft YaHei",sans-serif}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:var(--ok-paper);color:var(--ok-ink);font-family:var(--ok-font)}body{overflow-x:hidden}button{font:inherit}button:focus-visible{outline:3px solid var(--ok-lav);outline-offset:8px;border-radius:var(--ok-radius-lg)}
+.viewport{position:relative;width:100%;min-height:100svh;display:grid;place-items:center;overflow:hidden}
+.stage{position:relative;width:1920px;height:1080px;flex:none;transform-origin:top left;isolation:isolate}
+.layout-grid{position:absolute;inset:0 50px;display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:24px;pointer-events:none;z-index:8;visibility:hidden}
+.layout-grid i{background:#6658e80b;border-inline:1px solid #6658e814}
+html[data-grid="true"] .layout-grid{visibility:visible}
+.brand{position:absolute;left:0;top:0;width:204px;height:80px;display:grid;place-items:center;background:var(--ok-ink);color:var(--ok-lime);border-radius:0 0 18px 0;font-size:32px;font-weight:600;letter-spacing:-1.5px;box-shadow:inset 0 1px 0 #ffffff1a}
+.room{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.clock{position:absolute;left:1065px;top:157px;width:49px;height:44px;transform:skewY(26deg) scaleX(.9);color:var(--ok-muted)}
+.scene-entry{position:absolute;padding:0;border:0;background:transparent;color:var(--ok-ink);cursor:pointer;text-align:center;-webkit-tap-highlight-color:transparent}
+.scene-entry .object{display:block;overflow:visible;width:100%;height:100%;transition:transform .25s cubic-bezier(.2,.7,.2,1),filter .25s;filter:drop-shadow(0 12px 10px #17191d0a);transform-origin:50% 90%}
+.scene-entry .object-wrap{position:absolute;inset:0 0 auto;height:290px}
+.scene-entry .label{position:absolute;top:302px;left:0;width:100%;font-size:20px;line-height:28px;font-weight:500;white-space:nowrap;transition:color .2s}
+.scene-entry .recent{position:absolute;top:330px;left:50%;font-size:14px;line-height:22px;color:var(--ok-muted);white-space:nowrap}
+.scene-entry::before{content:"";position:absolute;left:15%;right:15%;height:35px;top:269px;border-radius:50%;background:radial-gradient(ellipse,#17191d15,transparent 70%);opacity:0;transition:opacity .25s}
+.scene-entry:hover .object,.scene-entry:focus-visible .object{transform:translateY(-6px);filter:drop-shadow(0 17px 12px #17191d18)}
+.scene-entry:hover::before,.scene-entry:focus-visible::before,.scene-entry[aria-pressed="true"]::before{opacity:1}
+.scene-entry[aria-pressed="true"] .label{text-decoration:underline;text-decoration-color:#c7c3bc;text-decoration-thickness:3px;text-underline-offset:8px}
+.history{left:380px;top:360px;width:250px;height:354px}
+.project{left:810px;top:360px;width:300px;height:354px}
+.create{left:1330px;top:380px;width:220px;height:334px}
+.create .object-wrap{height:270px}
+.create .label{top:282px}
+.create::before{top:249px}
+.defs{position:absolute;width:0;height:0;overflow:hidden}
+@media(prefers-reduced-motion:reduce){.scene-entry .object,.scene-entry::before{transition:none}.scene-entry:hover .object,.scene-entry:focus-visible .object{transform:none}}
+.scene-entry img.object{object-fit:contain}.brand{background:transparent;box-shadow:none}.brand img{display:block;width:64px;height:64px;object-fit:cover;border-radius:18px}.scene-entry img.object{object-position:center bottom}
+.history img.object,.create img.object{scale:-1 1}
+
+/* The scene's ground anchors stay in the original 1920 × 1080 grid. */
+.viewport{height:100svh;min-height:320px;overflow:hidden}
+.stage{position:absolute;left:0;top:0;--scene-scale:1;--label-size:20px;--recent-size:14px;--hover-lift:24px}
+.brand{position:absolute;z-index:10;left:clamp(16px,3.6458vw,96px);top:clamp(12px,1.6vh,24px);width:64px;height:64px}
+.brand img{width:100%;height:100%}
+.history .object-wrap{left:26px;right:auto;top:12px;width:224px;height:290px}
+.create .object-wrap{top:30px}
+.scene-entry .label{font-size:calc(var(--label-size) / var(--scene-scale));line-height:1.4}
+.scene-entry .recent{font-size:calc(var(--recent-size) / var(--scene-scale));line-height:1.5}
+.scene-entry .object{filter:none;transition:transform .38s cubic-bezier(.2,.8,.2,1),filter .38s}
+.scene-entry:hover .object,.scene-entry:focus-visible .object{transform:translateY(calc(-1 * var(--hover-lift)));filter:drop-shadow(0 20px 18px #17191d12)}
+.scene-entry::before{display:none}
+.contact-shadow{transition:opacity .38s,filter .38s;opacity:.78}
+.stage:has(.history:hover) .contact-history,.stage:has(.history:focus-visible) .contact-history,
+.stage:has(.project:hover) .contact-project,.stage:has(.project:focus-visible) .contact-project,
+.stage:has(.create:hover) .contact-create,.stage:has(.create:focus-visible) .contact-create{opacity:.30;filter:blur(7px)}
+@media(max-width:719px){.brand{width:48px;height:48px;left:20px;top:20px}.brand img{border-radius:14px}.scene-entry .label{font-weight:500}.scene-entry .recent{top:calc(302px + 30px / var(--scene-scale))}}
+@media(max-height:500px) and (min-width:720px){.brand{width:44px;height:44px}}
+@media(prefers-reduced-motion:reduce){.scene-entry .object,.contact-shadow{transition:none}.scene-entry:hover .object,.scene-entry:focus-visible .object{transform:none}}
+
+.contact-shadow{filter:blur(3px)}.scene-entry .recent{top:calc(302px + (var(--label-size) * 1.4 + 2px) / var(--scene-scale))}
+.history .object-wrap{left:12.698px;right:auto;top:41.361px;width:267.124px;height:267.124px}
+.project .object-wrap{left:13.161px;right:auto;top:38.863px;width:266.661px;height:266.661px}
+.create .object-wrap{left:-41.387px;right:auto;top:29.383px;width:293.633px;height:293.633px}
+.history .object-wrap{left:12.484px;right:auto;top:37.342px;width:270.689px;height:270.689px}
+.project .object-wrap{left:9.261px;right:auto;top:34.448px;width:273.199px;height:273.199px}
+.create .object-wrap{left:-43.121px;right:auto;top:24.869px;width:296.059px;height:296.059px}
+.history .object-wrap{left:10.552px;right:auto;top:35.493px;width:275.184px;height:275.184px}
+.project .object-wrap{left:-4.455px;right:auto;top:21.748px;width:293.021px;height:293.021px}
+.create .object-wrap{left:-43.552px;right:auto;top:11.560px;width:303.621px;height:303.621px}
+
+/* Captions have a screen-aware minimum gap; motion is separate from object projection. */
+.stage{--caption-offset:52px}
+.history,.project{height:430px}.create{height:410px}
+.scene-entry .label{top:calc(302px + var(--caption-offset))}
+.create .label{top:calc(282px + var(--caption-offset))}
+.scene-entry .recent{top:calc(302px + var(--caption-offset) + (var(--label-size) * 1.4 + 6px) / var(--scene-scale))}
+.scene-entry .object-wrap{transition:transform .38s cubic-bezier(.2,.8,.2,1)}
+.scene-entry:hover .object,.scene-entry:focus-visible .object{transform:none;filter:none}
+.scene-entry:hover .object-wrap,.scene-entry:focus-visible .object-wrap{transform:translateY(calc(-1 * var(--hover-lift)))}
+.hover-ground-shadow{opacity:0;transform-box:fill-box;transform-origin:center;transform:scale(.85);filter:blur(3px);transition:opacity .38s,transform .38s,filter .38s}
+.stage:has(.history:hover) .hover-history,.stage:has(.history:focus-visible) .hover-history,
+.stage:has(.project:hover) .hover-project,.stage:has(.project:focus-visible) .hover-project,
+.stage:has(.create:hover) .hover-create,.stage:has(.create:focus-visible) .hover-create{opacity:.9;transform:scale(1.1);filter:blur(4px)}
+@media(prefers-reduced-motion:reduce){.scene-entry .object-wrap,.hover-ground-shadow{transition:none}.scene-entry:hover .object-wrap,.scene-entry:focus-visible .object-wrap{transform:none}}
+
+.history .object-wrap{left:-12.031px;right:auto;top:39.090px;width:288.937px;height:288.937px}.hover-shadow-layer{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.history .object-wrap{left:2.76px;right:auto;top:34.98px;width:279.28px;height:279.28px}
+/* Projection correction of the user-selected PNG; source pixels are unchanged. */
+.history .object-wrap{left:-19.5944px;right:auto;top:-17.9585px;width:325.2638px;height:325.2638px}
+.history img.object{scale:none;transform:matrix(-1,0.00607748,0,0.73723204,0,0)!important;transform-origin:50% 100%}
+
+
+/* Figma 2252:3808 / 2252:3868. Overlay grid stays independent of the scene camera. */
+.project-dialog{box-sizing:border-box;width:min(638px,calc(100% - 32px));max-width:none;max-height:calc(100svh - 48px);margin:auto;padding:0;border:0;border-radius:20px;background:#fff;color:#000000d9;font-family:var(--ok-font);box-shadow:0 24px 72px #17191d14;overflow:auto}
+.project-dialog::backdrop{background:#0000001a}
+.project-dialog *{box-sizing:border-box}
+.project-dialog .modal-content{padding:40px 24px 26px;display:grid;grid-template-columns:repeat(12,minmax(0,1fr));column-gap:12px}
+.project-dialog .modal-content>*{grid-column:1/-1;min-width:0}
+.project-dialog .modal-header{display:flex;align-items:center;justify-content:space-between;gap:20px;min-height:32px}
+.project-dialog h2{font-size:24px;line-height:32px;font-weight:500;margin:0}
+.project-dialog button,.project-dialog input{font:inherit}
+.dialog-close{width:32px;height:32px;padding:0;display:grid;place-items:center;border:0;border-radius:9px;background:transparent;cursor:pointer;margin-right:-8px}
+.dialog-close:hover{background:#f3f4f1}
+.close-slot{position:relative;width:12px;height:12px;display:block}
+.close-slot img{position:absolute;left:-.9px;top:-.9px}
+.project-dialog input{width:100%;height:45px;background:#d9d9d9;border:0;border-radius:15px;color:#17191d;font-size:14px;line-height:22px;outline-offset:3px}
+.project-dialog input::placeholder{color:#8992a3;opacity:1}
+.project-dialog input:focus-visible{outline:2px solid var(--ok-lime)}
+.history-search{position:relative;margin-top:20px}
+.history-search input{padding:10px 18px 10px 51px}
+.search-slot{position:absolute;left:22px;top:14px;width:18px;height:18px;pointer-events:none}
+.search-slot .search-ring{position:absolute;left:-.75px;top:-.75px}
+.search-slot .search-handle{position:absolute;left:9.47px;top:10.47px}
+.history-count{margin:16px 0 9px;font-size:12px;line-height:20px;font-weight:300;color:#000000d9}
+.history-list{list-style:none;padding:0;margin:0;max-height:min(400px,calc(100svh - 260px));min-height:100px;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}
+.history-list li{margin:0;padding:0}
+.history-row{width:100%;min-height:100px;display:grid;grid-template-columns:35px minmax(0,1fr) 16px;gap:21px;align-items:center;border:0;background:#fff;padding:12px;text-align:left;color:inherit;cursor:pointer}
+.history-row:hover,.history-row[aria-current="true"]{background:#eee}
+.folder-slot{position:relative;width:35px;height:36px;display:block}
+.folder-slot img{position:absolute;left:-.75px;top:-.75px}
+.project-row-copy{min-width:0}
+.project-row-title{display:block;font-size:20px;line-height:28px;font-weight:400;overflow-wrap:anywhere}
+.project-row-meta{display:block;font-size:14px;line-height:22px;margin-top:2px}
+.arrow-slot{position:relative;width:16px;height:12px;display:block;opacity:0}
+.arrow-slot img{position:absolute;left:-.9px;top:-.9px}
+.history-row:hover .arrow-slot,.history-row[aria-current="true"] .arrow-slot{opacity:1}
+.project-divider{display:block;width:100%;height:1px;overflow:hidden}
+.project-divider img{display:block;max-width:100%;height:auto}
+.history-empty{margin:0;padding:36px 12px;color:#858991;font-size:14px;text-align:center}
+.project-dialog--create .modal-content{padding-bottom:55px}
+.create-project-form{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));column-gap:12px;margin-top:33px}
+.create-project-form label{grid-column:1/-1;font-size:20px;line-height:28px;margin-bottom:10px}
+.create-project-form input{grid-column:1/-1;padding:10px 16px}
+.create-actions{grid-column:1/-1;display:flex;justify-content:flex-end;gap:14px;margin-top:24px}
+.dialog-action{width:168px;max-width:calc(50% - 7px);height:45px;border:0;border-radius:15px;cursor:pointer;font-size:16px;line-height:24px;color:#fff}
+.dialog-action--cancel{background:#b2b2b2}
+.dialog-action--confirm{background:#000}
+.dialog-action:hover{filter:brightness(.93)}
+@media(max-width:700px){
+.project-dialog{max-height:calc(100svh - 32px)}
+.project-dialog .modal-content{padding:24px 20px;column-gap:8px}
+.project-dialog h2{font-size:22px;line-height:30px}
+.project-dialog--create .modal-content{padding-bottom:28px}
+.create-project-form{margin-top:28px;column-gap:8px}
+.create-project-form label{font-size:17px;line-height:26px}
+.history-row{gap:14px;padding:12px 10px;grid-template-columns:35px minmax(0,1fr) 16px}
+.project-row-title{font-size:16px;line-height:24px}
+.project-row-meta{font-size:12px;line-height:20px}
+.history-list{max-height:min(400px,calc(100svh - 220px))}
+}
+
+.history-list li{position:relative}.project-divider{position:absolute;left:0;bottom:0}
+.project .label{overflow:hidden;text-overflow:ellipsis}
+
+/* Compact project rows and motion share the existing UI Kit tokens. */
+.project-dialog input:focus-visible{outline:2px solid var(--ok-lime)}
+.history-row{min-height:76px;grid-template-columns:25px minmax(0,1fr) 16px;gap:16px;padding:12px}
+.folder-slot{width:25px;height:26px;display:grid;place-items:center}
+.folder-slot img{position:static;transform:scale(.7);transform-origin:center}
+.project-row-title{font-size:16px;line-height:24px}
+.project-row-meta{font-size:12px;line-height:20px;color:var(--ok-muted)}
+.history-list{min-height:76px;max-height:min(400px,calc(100svh - 260px))}
+.project-dialog[open]{animation:dialog-enter 260ms cubic-bezier(.2,.8,.2,1) both}
+.project-dialog[open]::backdrop{animation:backdrop-enter 260ms ease both}
+.project-dialog[open].is-closing{animation:dialog-exit 180ms ease both;pointer-events:none}
+.project-dialog[open].is-closing::backdrop{animation:backdrop-exit 180ms ease both}
+@keyframes dialog-enter{from{opacity:0;transform:translateY(18px) scale(.975)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes dialog-exit{from{opacity:1;transform:translateY(0) scale(1)}to{opacity:0;transform:translateY(10px) scale(.985)}}
+@keyframes backdrop-enter{from{opacity:0}to{opacity:1}}
+@keyframes backdrop-exit{from{opacity:1}to{opacity:0}}
+@media(max-width:700px){.history-row{grid-template-columns:25px minmax(0,1fr) 16px;gap:12px;padding:10px}.history-list{max-height:min(400px,calc(100svh - 220px))}}
+@media(prefers-reduced-motion:reduce){.project-dialog[open],.project-dialog[open]::backdrop,.project-dialog[open].is-closing,.project-dialog[open].is-closing::backdrop{animation:none}}
+
+.project-dialog button:focus-visible{outline:2px solid var(--ok-lime);outline-offset:3px}
+
+/* Keep icon geometry inside its slot and hold the scene entry while its dialog is open. */
+.history-row{column-gap:24px}
+.folder-slot{display:block}
+.folder-slot img{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) scale(.7);transform-origin:center}
+.scene-entry.is-dialog-open .object-wrap{transform:translateY(calc(-1 * var(--hover-lift)))}
+.stage:has(.history.is-dialog-open) .hover-history,.stage:has(.create.is-dialog-open) .hover-create{opacity:.9;transform:scale(1.1);filter:blur(4px)}
+.stage:has(.history.is-dialog-open) .contact-history,.stage:has(.create.is-dialog-open) .contact-create{opacity:.30;filter:blur(7px)}
+.scene-entry.just-closed .object-wrap{transform:translateY(0)!important}
+.stage:has(.history.just-closed) .hover-history,.stage:has(.create.just-closed) .hover-create{opacity:0;transform:scale(.85)}
+.stage:has(.history.just-closed) .contact-history,.stage:has(.create.just-closed) .contact-create{opacity:.78;filter:blur(3px)}
+@media(max-width:700px){.history-row{column-gap:20px}}
+@media(prefers-reduced-motion:reduce){.scene-entry.is-dialog-open .object-wrap{transform:none}}
+
+</style>
+<link rel="icon" type="image/svg+xml" href="assets/media/7d6c016d05bed0e15900.svg">
+<style>.brand{display:flex;align-items:center;justify-content:flex-start;gap:10px;background:#fff;border-radius:13px;padding:11px 8px;min-height:68px;width:168px;height:auto}.brand .brand-mark{display:grid;place-items:center;width:42px;height:42px;overflow:hidden;border-radius:12px;flex-shrink:0}.brand .brand-mark img{display:block;width:100%;height:100%;object-fit:cover}.brand .brand-wordmark{display:block}.brand strong{color:#17191d;font-size:24px;line-height:32px;letter-spacing:-.04em}.brand small{display:block;color:#92978b;font-size:10px;line-height:16px;letter-spacing:.08em}</style></head>
+<body>
+<svg class="defs" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><defs>
+  <linearGradient id="charcoal" x1="0" y1="0" x2=".85" y2="1"><stop stop-color="#454744"/><stop offset=".44" stop-color="#252725"/><stop offset="1" stop-color="#17191d"/></linearGradient>
+  <linearGradient id="charcoal-side" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#343633"/><stop offset="1" stop-color="#181b18"/></linearGradient>
+  <linearGradient id="porcelain" x1="0" y1="0" x2=".5" y2="1"><stop stop-color="#fff"/><stop offset="1" stop-color="#e8e9e3"/></linearGradient>
+  <linearGradient id="lime" x1="0" y1="0" x2=".8" y2="1"><stop stop-color="#eeffb7"/><stop offset=".45" stop-color="#dfff73"/><stop offset="1" stop-color="#c5e65b"/></linearGradient>
+  <linearGradient id="lavender" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#e6e2ff"/><stop offset="1" stop-color="#b5abea"/></linearGradient>
+  <linearGradient id="floor" x1="0" y1="0" x2=".6" y2="1"><stop stop-color="#eff0f1"/><stop offset="1" stop-color="#e1e3e5"/></linearGradient>
+  <linearGradient id="wall" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fafafa"/><stop offset="1" stop-color="#ffffff"/></linearGradient>
+  <linearGradient id="screen" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#edffae"/><stop offset=".5" stop-color="#dfff73"/><stop offset="1" stop-color="#bcd952"/></linearGradient>
+  <radialGradient id="contact"><stop stop-color="#17191d" stop-opacity=".13"/><stop offset="1" stop-color="#17191d" stop-opacity="0"/></radialGradient>
+  <linearGradient id="portal" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#f8fceb"/><stop offset="1" stop-color="#e9f6c7"/></linearGradient>
+</defs></svg>
+<main class="viewport" aria-label="项目入口"><div class="brand"><span class="brand-mark"><img src="assets/media/30f7bf31ef79e5e982b6.png" alt="OK啊图标" decoding="async"></span><span class="brand-wordmark"><strong>OK啊</strong><small>OK AH</small></span></div>
+<div class="stage">
+  
+  <div class="layout-grid" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+  <svg class="room" viewBox="0 0 1920 1080" aria-hidden="true">
+    <path d="M331 407 959 106V372L331 673Z" fill="url(#wall)"/>
+    <path d="m331 673 628-301 628 301-628 301Z" fill="url(#floor)"/>
+    <g fill="none" stroke="#d0d2d4" stroke-width="1">
+      <path d="m540.33 572.67 628 301M749.67 472.33l628 301M540.33 773.33l628-301M749.67 873.67l628-301"/>
+    </g>
+    <path d="m331 673 628 301 628-301" fill="none" stroke="#d6d8da" stroke-width="1"/>
+    <path class="contact-shadow contact-history" d="M617.45 582.40 L463.90 656.00 L414.88 637.75 L568.43 564.15Z" fill="#555c4c" fill-opacity=".12"/>
+    <ellipse class="contact-shadow contact-project" cx="960" cy="646" rx="112" ry="24" fill="url(#contact)"/>
+    <path class="contact-shadow contact-create" d="M1328.6 672.4 L1410.9 616.7 L1524.7 648.2 L1502.9 657.9Z" fill="#555c4c" fill-opacity=".12"/>
+  </svg>
+  <svg class="hover-shadow-layer" viewBox="0 0 1920 1080" aria-hidden="true"><defs><radialGradient id="hover-contact"><stop stop-color="#17191d" stop-opacity=".22"/><stop offset="1" stop-color="#17191d" stop-opacity="0"/></radialGradient></defs><ellipse class="hover-ground-shadow hover-history" cx="522" cy="653" rx="99" ry="20" fill="url(#hover-contact)"/><ellipse class="hover-ground-shadow hover-project" cx="960" cy="651" rx="108" ry="22" fill="url(#hover-contact)"/><ellipse class="hover-ground-shadow hover-create" cx="1427" cy="657" rx="94" ry="20" fill="url(#hover-contact)"/></svg>
+  <svg class="clock" viewBox="0 0 49 44" aria-hidden="true">
+    <defs><filter id="clock-shadow" x="-40%" y="-40%" width="180%" height="180%"><feDropShadow dx="1.2" dy="1.8" stdDeviation="1.1" flood-color="#34373b" flood-opacity=".14"/></filter></defs>
+    <g filter="url(#clock-shadow)">
+      <circle cx="24.5" cy="22" r="19.5" fill="#d8dade"/>
+      <circle cx="24.1" cy="21.4" r="19" fill="#fbfbfb" stroke="#c7cacf" stroke-width=".65"/>
+      <circle cx="24.1" cy="21.4" r="17.6" fill="#f7f7f7" stroke="#e5e6e8" stroke-width=".45"/>
+    </g>
+    <g stroke="#a7abb1" stroke-width=".8" stroke-linecap="square"><path d="M24.1 7.2v2M24.1 33.6v2M9.9 21.4h2M36.3 21.4h2"/></g>
+    <path d="M24.1 12.5v8.9l7.4 4.4" stroke="#62676f" stroke-width="1.1" stroke-linecap="square" stroke-linejoin="miter" fill="none"/>
+    <circle cx="24.1" cy="21.4" r="1.05" fill="#62676f"/>
+  </svg>
+
+  <button class="scene-entry history" data-destination="history" aria-label="历史项目" aria-pressed="false">
+    <span class="object-wrap"><img class="object" alt="" draggable="false" src="assets/media/1c473427ce4b95d35d5e.png"></span>
+    <span class="label">历史项目</span>
+  </button>
+
+  <button class="scene-entry project" data-destination="project" aria-label="小组管理项目" aria-pressed="false">
+    <span class="object-wrap"><img class="object" alt="" draggable="false" src="assets/media/aec96c49fd628942a0e7.png"></span>
+    <span class="label">小组管理项目</span>
+    <span class="recent">-最近打开</span>
+  </button>
+
+  <button class="scene-entry create" data-destination="create" aria-label="新建项目" aria-pressed="false">
+    <span class="object-wrap"><img class="object" alt="" draggable="false" src="assets/media/d84a6879659aec117273.png"></span>
+    <span class="label">新建项目</span>
+  </button>
+</div>
+</main>
+<script>
+/* Responsive camera keeps the desktop 12-column composition, with readable labels on narrow screens. */
+(function () {
+  const viewport = document.querySelector('.viewport');
+  const stage = document.querySelector('.stage');
+  const entries = [...document.querySelectorAll('[data-destination]')];
+  let queued = false;
+  function fit() {
+    queued = false;
+    const width = viewport.clientWidth;
+    const height = viewport.clientHeight;
+    let box, padding, topReserve, bottomReserve;
+    if (width >= 1600) {
+      box = { x: 0, y: 0, width: 1920, height: 1080 };
+      padding = 0; topReserve = 0; bottomReserve = 0;
+    } else if (width >= 720) {
+      box = { x: 300, y: 170, width: 1320, height: 840 };
+      padding = 32; topReserve = 72; bottomReserve = 24;
+    } else {
+      box = { x: 300, y: 300, width: 1320, height: 710 };
+      padding = 14; topReserve = 88; bottomReserve = 24;
+    }
+    const availableWidth = width - padding * 2;
+    const availableHeight = height - topReserve - bottomReserve;
+    const scale = Math.max(0.12, Math.min(availableWidth / box.width, availableHeight / box.height, 1.5));
+    const left = (width - box.width * scale) / 2 - box.x * scale;
+    const top = topReserve + Math.max(0, (availableHeight - box.height * scale) / 2) - box.y * scale;
+    stage.style.transform = 'translate(' + left + 'px,' + top + 'px) scale(' + scale + ')';
+    stage.style.left = '0'; stage.style.top = '0';
+    stage.style.setProperty('--scene-scale', scale);
+    stage.style.setProperty('--caption-offset', Math.max(52, 32 / scale) + 'px');
+    stage.style.setProperty('--label-size', Math.max(width < 720 ? 12 : 15, Math.min(20, 20 * scale)) + 'px');
+    stage.style.setProperty('--recent-size', Math.max(11, Math.min(14, 14 * scale)) + 'px');
+    stage.style.setProperty('--hover-lift', Math.min(84, 24 / scale) + 'px');
+    viewport.dataset.layout = width >= 1600 ? 'wide' : width >= 720 ? 'desktop' : 'compact';
+  }
+  function scheduleFit() { if (!queued) { queued = true; requestAnimationFrame(fit); } }
+  new ResizeObserver(scheduleFit).observe(viewport);
+  window.visualViewport?.addEventListener('resize', scheduleFit);
+  window.addEventListener('resize', scheduleFit);
+  fit();
+  entries.forEach(button => button.addEventListener('click', () => {
+    entries.forEach(entry => entry.setAttribute('aria-pressed', String(entry === button)));
+    document.dispatchEvent(new CustomEvent('ok-ah:navigate', { detail: { destination: button.dataset.destination } }));
+  }));
+  if (new URLSearchParams(location.search).get('grid') === '1') document.documentElement.dataset.grid = 'true';
+})();
+</script>
+
+<dialog class="project-dialog project-dialog--history" id="history-dialog" aria-labelledby="history-dialog-title">
+  <div class="modal-content">
+    <header class="modal-header"><h2 id="history-dialog-title">历史项目</h2><button class="dialog-close" type="button" data-close-dialog aria-label="关闭历史项目"><span class="close-slot"><img src="assets/media/6f6f5709eddc985c7264.svg" alt=""></span></button></header>
+    <div class="history-search"><span class="search-slot" aria-hidden="true"><img class="search-ring" src="assets/media/7ac99cc7bf90469d9711.svg" alt=""><img class="search-handle" src="assets/media/b177e108f12d5c6b1b47.svg" alt=""></span><input id="history-search" type="search" aria-label="搜索项目名称" placeholder="搜索项目名称" autocomplete="off"></div>
+    <p class="history-count" id="history-count" aria-live="polite">共4个项目</p>
+    <ul class="history-list" id="history-list" aria-label="历史项目列表"></ul>
+  </div>
+</dialog>
+<dialog class="project-dialog project-dialog--create" id="create-dialog" aria-labelledby="create-dialog-title">
+  <div class="modal-content">
+    <header class="modal-header"><h2 id="create-dialog-title">新建项目</h2><button class="dialog-close" type="button" data-close-dialog aria-label="关闭新建项目"><span class="close-slot"><img src="assets/media/6f6f5709eddc985c7264.svg" alt=""></span></button></header>
+    <form class="create-project-form" id="create-project-form">
+      <label for="project-name">项目名称</label>
+      <input id="project-name" name="projectName" placeholder="例如：校园食物浪费调研" autocomplete="off" maxlength="80" required>
+      <div class="create-actions"><button class="dialog-action dialog-action--cancel" type="button" data-close-dialog>取消</button><button class="dialog-action dialog-action--confirm" type="submit">确定</button></div>
+    </form>
+  </div>
+</dialog>
+
+<script>
+/* Local HTML interactions for the two Figma overlays. Business routes may subscribe to ok-ah:open-project. */
+(function () {
+ const assets={"search-handle":"assets/media/b177e108f12d5c6b1b47.svg","close":"assets/media/6f6f5709eddc985c7264.svg","folder-active":"assets/media/07864348970b46d37b08.svg","divider":"assets/media/d522aa0ce9c5fc3cf985.svg","search-ring":"assets/media/7ac99cc7bf90469d9711.svg","folder":"assets/media/15538bf1a43d5d76af78.svg","arrow":"assets/media/d6edea22daef067e6cbd.svg"};
+ const seed=[
+  {id:'team-management',name:'小组管理项目',meta:'6 位成员 · 今天 14:30 访问'},
+  {id:'brand-renewal',name:'品牌焕新计划',meta:'4 位成员 · 昨天访问'},
+  {id:'product-research',name:'产品体验研究',meta:'3 位成员 · 10 月 26 日访问'},
+  {id:'campus-food',name:'校园食物浪费调研',meta:'5 位成员 · 10 月 23 日访问'}
+ ];
+ const key='ok-ah.local-projects.v1',selectionKey='ok-ah.current-project.v1';
+ let saved=[],current='team-management';
+ try {
+  const data=JSON.parse(localStorage.getItem(key)||'[]');
+  if(Array.isArray(data))saved=data.filter(p=>p&&typeof p.id==='string'&&typeof p.name==='string'&&p.name.trim()).map(p=>({id:p.id,name:p.name.slice(0,80),meta:typeof p.meta==='string'?p.meta.slice(0,120):'刚刚创建'}));
+  current=localStorage.getItem(selectionKey)||current;
+ } catch {}
+ let projects=[...saved,...seed];
+ if(!projects.some(p=>p.id===current))current='team-management';
+ const history=document.getElementById('history-dialog'),create=document.getElementById('create-dialog');
+ const search=document.getElementById('history-search'),list=document.getElementById('history-list'),count=document.getElementById('history-count');
+ const form=document.getElementById('create-project-form'),nameInput=document.getElementById('project-name');
+ let trigger=null,previousOverflow='';
+ function image(name){const img=document.createElement('img');img.src=assets[name];img.alt='';return img;}
+ function slot(className,name){const span=document.createElement('span');span.className=className;span.setAttribute('aria-hidden','true');span.append(image(name));return span;}
+ function renderHistory(){
+  const query=search.value.trim().toLocaleLowerCase();
+  const filtered=projects.filter(p=>p.name.toLocaleLowerCase().includes(query));
+  count.textContent='共'+filtered.length+'个项目';list.replaceChildren();
+  if(!filtered.length){const li=document.createElement('li');li.className='history-empty';li.textContent='没有找到匹配的项目';list.append(li);return;}
+  filtered.forEach((project,index)=>{
+   const li=document.createElement('li'),button=document.createElement('button');
+   button.type='button';button.className='history-row';button.dataset.projectId=project.id;
+   if(project.id===current)button.setAttribute('aria-current','true');
+   button.append(slot('folder-slot',project.id===current?'folder-active':'folder'));
+   const copy=document.createElement('span');copy.className='project-row-copy';
+   const title=document.createElement('span');title.className='project-row-title';title.textContent=project.name;
+   const meta=document.createElement('span');meta.className='project-row-meta';meta.textContent=project.meta;
+   copy.append(title,meta);button.append(copy,slot('arrow-slot','arrow'));
+   button.addEventListener('click',()=>selectProject(project));li.append(button);
+   if(index<filtered.length-1){const divider=document.createElement('span');divider.className='project-divider';divider.setAttribute('aria-hidden','true');divider.append(image('divider'));li.append(divider);}
+   list.append(li);
+  });
+ }
+ function closeDialog(dialog){
+  if(!dialog.open||dialog.classList.contains('is-closing'))return;
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches){dialog.close();return;}
+  dialog.classList.add('is-closing');
+  const finish=()=>{clearTimeout(dialog.closeTimer);dialog.removeEventListener('animationend',onEnd);if(dialog.open)dialog.close();dialog.classList.remove('is-closing');};
+  const onEnd=event=>{if(event.target===dialog&&event.animationName==='dialog-exit')finish();};
+  dialog.addEventListener('animationend',onEnd);
+  dialog.closeTimer=setTimeout(finish,230);
+ }
+ function show(dialog,source){
+  if(history.open)history.close();if(create.open)create.close();
+  trigger=source||document.activeElement;
+  dialog.sceneTrigger=trigger;
+  trigger?.classList.remove('just-closed');trigger?.classList.add('is-dialog-open');
+  previousOverflow=document.body.style.overflow;document.body.style.overflow='hidden';
+  if(dialog===history){search.value='';renderHistory();}
+  else{form.reset();nameInput.setCustomValidity('');}
+  clearTimeout(dialog.closeTimer);dialog.classList.remove('is-closing');
+  dialog.showModal();
+  requestAnimationFrame(()=>{if(dialog.open)(dialog===history?search:nameInput).focus();});
+ }
+ function selectProject(project){
+  current=project.id;
+  try{localStorage.setItem(selectionKey,current);}catch{}
+  const label=document.querySelector('.project .label');label.textContent=project.name;
+  document.querySelector('.project').setAttribute('aria-label',project.name);
+  closeDialog(history);
+  document.dispatchEvent(new CustomEvent('ok-ah:open-project',{detail:{id:project.id,name:project.name,storage:'local'}}));
+ }
+ for(const dialog of [history,create]){
+  dialog.addEventListener('cancel',event=>{event.preventDefault();closeDialog(dialog);});
+  dialog.addEventListener('keydown',event=>{if(event.key==='Tab'){
+    const focusables=[...dialog.querySelectorAll('button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),a[href],[tabindex]:not([tabindex="-1"])')].filter(n=>n.tabIndex>=0&&n.getClientRects().length);
+    const first=focusables[0],last=focusables[focusables.length-1];
+    if(!first){event.preventDefault();return;}
+    if(event.shiftKey&&(document.activeElement===first||!dialog.contains(document.activeElement))){event.preventDefault();last.focus();}
+    else if(!event.shiftKey&&(document.activeElement===last||!dialog.contains(document.activeElement))){event.preventDefault();first.focus();}
+   } if(event.key==='Escape'){event.preventDefault();event.stopPropagation();closeDialog(dialog);}},true);
+  dialog.querySelectorAll('[data-close-dialog]').forEach(b=>b.addEventListener('click',()=>closeDialog(dialog)));
+  dialog.addEventListener('click',event=>{
+   if(event.target!==dialog)return;
+   const r=dialog.getBoundingClientRect();
+   if(event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom)closeDialog(dialog);
+  });
+  dialog.addEventListener('close',()=>{
+   const entry=dialog.sceneTrigger;
+   entry?.classList.remove('is-dialog-open');entry?.classList.add('just-closed');
+   dialog.sceneTrigger=null;
+   document.body.style.overflow=previousOverflow;
+   const target=trigger;trigger=null;target?.focus();
+  });
+ }
+ document.querySelectorAll('.scene-entry').forEach(entry=>{
+  for(const event of ['pointerleave','pointerenter','blur'])entry.addEventListener(event,()=>entry.classList.remove('just-closed'));
+ });
+ search.addEventListener('input',renderHistory);
+ nameInput.addEventListener('input',()=>nameInput.setCustomValidity(''));
+ form.addEventListener('submit',event=>{
+  event.preventDefault();const name=nameInput.value.trim();
+  if(!name){nameInput.setCustomValidity('请输入项目名称');nameInput.reportValidity();return;}
+  const project={id:'local-'+(globalThis.crypto?.randomUUID?.()||Date.now()+'-'+Math.random().toString(36).slice(2)),name,meta:'刚刚创建'};
+  saved=[project,...saved];projects=[...saved,...seed];
+  try{localStorage.setItem(key,JSON.stringify(saved));}catch{}
+  closeDialog(create);selectProject(project);
+  document.dispatchEvent(new CustomEvent('ok-ah:create-project',{detail:{id:project.id,name:project.name,storage:'local'}}));
+ });
+ document.addEventListener('ok-ah:navigate',event=>{
+  const destination=event.detail?.destination;
+  if(destination==='history')show(history,document.querySelector('.history'));
+  if(destination==='create')show(create,document.querySelector('.create'));
+ });
+ function enterProject(project){
+  const url=new URL('project.html',location.href);url.searchParams.set('project',project.id);
+  const wait=matchMedia('(prefers-reduced-motion: reduce)').matches?0:240;
+  setTimeout(()=>location.assign(url.href),wait);
+ }
+ document.addEventListener('ok-ah:open-project',event=>enterProject(event.detail));
+ document.addEventListener('ok-ah:navigate',event=>{if(event.detail?.destination==='project'){const project=projects.find(p=>p.id===current)||seed[0];enterProject(project);}});
+ const selected=projects.find(p=>p.id===current);
+ if(selected&&current!=='team-management'){document.querySelector('.project .label').textContent=selected.name;document.querySelector('.project').setAttribute('aria-label',selected.name);}
+})();
+</script>
+<script src="onboarding.js"></script></body>
+</html>
