@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 184" role="img" aria-label="白色建筑模型风格的归档书架">
+<defs>
+ <linearGradient id="wall" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#fff"/><stop offset=".72" stop-color="#f3f3f2"/><stop offset="1" stop-color="#e5e5e4"/></linearGradient>
+ <linearGradient id="side" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#d9d9d8"/><stop offset="1" stop-color="#f0f0ef"/></linearGradient>
+ <linearGradient id="floor" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#fafafa"/><stop offset="1" stop-color="#dededd"/></linearGradient>
+ <filter id="shadow" x="-20%" y="-50%" width="140%" height="200%"><feGaussianBlur stdDeviation="9"/></filter>
+</defs>
+<rect x="17" y="162" width="1570" height="14" rx="4" fill="#aaa" opacity=".25" filter="url(#shadow)"/>
+<path d="M42 10 L1548 10 L1596 42 L4 42 Z" fill="#fff" stroke="#d5d5d3"/>
+<path d="M42 10 L1548 10 L1576 29 L24 29 Z" fill="#fafaf9"/>
+<path d="M4 42 H1596 V55 H4 Z" fill="url(#floor)" stroke="#cfcfcd"/>
+<path d="M4 42 L42 10 L42 24 L4 55 Z" fill="#d2d2d0" opacity=".9"/>
+<path d="M1596 42 L1548 10 L1548 24 L1596 55 Z" fill="#c9c9c7" opacity=".72"/>
+<path d="M22 55 H238 V160 H22 Z" fill="url(#wall)" stroke="#e2e2e1"/>
+<path d="M238 55 H249 V160 H238 Z" fill="url(#side)"/>
+<path d="M249 55 H454 V160 H249 Z" fill="#fafafa"/>
+<path d="M249 55 L270 75 V145 L249 160 Z" fill="#d8d8d6" opacity=".7"/>
+<path d="M454 55 L433 75 V145 L454 160 Z" fill="#c8c8c6" opacity=".55"/>
+<path d="M270 75 H433 V145 H270 Z" fill="#f4f4f2"/>
+<path d="M249 55 L454 55 L445 69 L258 69 Z" fill="#e8e8e7"/>
+<path d="M273 159 L273 84 L401 84 Q421 84 421 105 L421 159 Z" fill="#e9e9e8"/>
+<path d="M286 159 L286 98 L397 98 Q408 98 408 109 L408 159 Z" fill="#fff"/>
+<path d="M335 159 L335 119 L420 119 L420 159 Z" fill="#d5d5d4" opacity=".45"/>
+<path d="M454 55 H466 V160 H454 Z" fill="url(#side)"/>
+<path d="M466 55 H656 V160 H466 Z" fill="url(#wall)"/>
+<path d="M466 55 L484 73 V143 L466 160 Z" fill="#d0d0ce" opacity=".6"/>
+<path d="M656 55 L638 73 V143 L656 160 Z" fill="#cacac8" opacity=".65"/>
+<path d="M484 73 H638 V143 H484 Z" fill="#f4f4f2"/>
+<path d="M491 144 L531 144 L531 134 L570 134 L570 124 L610 124 L610 114 L645 114 L645 160 L491 160 Z" fill="#fff" stroke="#d4d4d3"/>
+<path d="M491 144 L491 160 L645 160 L645 114 L630 120 L630 150 L506 150 Z" fill="#e7e7e6"/>
+<path d="M656 55 H669 V160 H656 Z" fill="url(#side)"/>
+<path d="M669 55 H878 V160 H669 Z" fill="#fafafa"/>
+<path d="M669 55 L687 73 V143 L669 160 Z" fill="#d0d0ce" opacity=".6"/>
+<path d="M878 55 L860 73 V143 L878 160 Z" fill="#c6c6c4" opacity=".6"/>
+<path d="M687 73 H860 V143 H687 Z" fill="#f4f4f2"/>
+<path d="M692 160 L692 91 L734 63 L820 63 L856 91 L856 160 Z" fill="url(#wall)" stroke="#dededd"/>
+<path d="M734 63 L820 63 L856 91 L771 91 Z" fill="#fdfdfd" stroke="#e5e5e4"/>
+<path d="M692 91 L771 91 L771 160 L692 160 Z" fill="#f1f1f0"/>
+<path d="M771 91 L856 91 L856 160 L771 160 Z" fill="#dededd"/>
+<path d="M789 106 H839 V157 H789 Z" fill="#fff"/>
+<path d="M878 55 H891 V160 H878 Z" fill="url(#side)"/>
+<path d="M891 55 H1082 V160 H891 Z" fill="url(#wall)"/>
+<path d="M891 55 L909 73 V143 L891 160 Z" fill="#d1d1cf" opacity=".65"/>
+<path d="M1082 55 L1064 73 V143 L1082 160 Z" fill="#c5c5c3" opacity=".65"/>
+<path d="M909 73 H1064 V143 H909 Z" fill="#f4f4f2"/>
+<path d="M931 160 V95 Q931 70 956 70 H1018 Q1043 70 1043 95 V160 Z" fill="#d7d7d6"/>
+<path d="M945 160 V96 Q945 84 957 84 H1017 Q1029 84 1029 96 V160 Z" fill="#fff"/>
+<path d="M1029 95 Q1034 79 1018 70 H1028 Q1052 70 1052 95 V160 Z" fill="#ececeb"/>
+<path d="M1082 55 H1095 V160 H1082 Z" fill="url(#side)"/>
+<path d="M1095 55 H1297 V160 H1095 Z" fill="#fafafa"/>
+<path d="M1095 55 L1113 73 V143 L1095 160 Z" fill="#d0d0ce" opacity=".65"/>
+<path d="M1297 55 L1279 73 V143 L1297 160 Z" fill="#c5c5c3" opacity=".65"/>
+<path d="M1113 73 H1279 V143 H1113 Z" fill="#f4f4f2"/>
+<path d="M1125 160 L1125 89 L1171 89 L1222 134 L1268 134 L1268 160 Z" fill="url(#wall)" stroke="#dededd"/>
+<path d="M1171 89 L1191 78 L1254 123 L1222 134 Z" fill="#fff" stroke="#e1e1e0"/>
+<path d="M1222 134 L1268 134 L1268 160 L1222 160 Z" fill="#dededd"/>
+<path d="M1297 55 H1310 V160 H1297 Z" fill="url(#side)"/>
+<path d="M1310 55 H1578 V160 H1310 Z" fill="url(#wall)"/>
+<path d="M1310 55 L1328 73 V143 L1310 160 Z" fill="#d0d0ce" opacity=".65"/>
+<path d="M1578 55 L1560 73 V143 L1578 160 Z" fill="#c5c5c3" opacity=".65"/>
+<path d="M1328 73 H1560 V143 H1328 Z" fill="#f4f4f2"/>
+<path d="M1331 160 L1331 109 L1403 67 L1491 67 L1553 109 L1553 160 Z" fill="#fdfdfd" stroke="#dfdfde"/>
+<path d="M1403 67 L1491 67 L1553 109 L1465 109 Z" fill="#e6e6e5"/>
+<path d="M1362 160 V125 H1429 V160 Z" fill="#dadad9"/>
+<path d="M1370 160 V132 H1421 V160 Z" fill="#fff"/>
+<path d="M1475 123 H1536 V160 H1475 Z" fill="#ededec"/>
+<path d="M4 160 H1596 V172 H4 Z" fill="url(#floor)" stroke="#d4d4d3"/>
+<path d="M4 172 H1596 V178 H4 Z" fill="#e0e0df"/>
+<path d="M34 178 H115 V182 H34 Z M1485 178 H1566 V182 H1485 Z" fill="#d4d4d3"/>
+</svg>

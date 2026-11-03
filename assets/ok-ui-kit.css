@@ -1,0 +1,98 @@
+/* Tokens are the only source of shared visual values. Override on .ok-app or :root. */
+:root {
+  --ok-ink:#17191d; --ok-muted:#858991; --ok-line:#e8e9e8;
+  --ok-paper:#fbfbf9; --ok-white:#fff; --ok-lime:#dfff73;
+  --ok-lav:#6658e8; --ok-soft:#f3f4f1; --ok-sidebar:#f0f0eb;
+  --ok-danger:#b42318; --ok-radius-sm:10px; --ok-radius-md:14px; --ok-radius-lg:18px;
+  --ok-space-1:4px; --ok-space-2:8px; --ok-space-3:12px; --ok-space-4:16px;
+  --ok-space-5:20px; --ok-space-6:24px; --ok-space-8:32px; --ok-space-10:40px;
+  --ok-font:"PingFang SC","Noto Sans SC","Microsoft YaHei",sans-serif;
+  --ok-text-sm:12px; --ok-text-md:14px; --ok-text-lg:16px; --ok-text-title:32px;
+  --ok-shadow:0 3px 14px #15171906; --ok-sidebar-width:240px; --ok-context-width:292px;
+}
+:where([class^="ok-"],[class*=" ok-"]),:where([class^="ok-"],[class*=" ok-"]) * {box-sizing:border-box}
+:where([class^="ok-"],[class*=" ok-"]) {font-family:var(--ok-font)}
+.ok-button {display:inline-flex;align-items:center;justify-content:center;gap:var(--ok-space-2);border:1px solid var(--ok-line);border-radius:var(--ok-radius-sm);font-size:var(--ok-text-md);line-height:22px;padding:9px 16px;cursor:pointer;font-weight:500;color:var(--ok-ink);background:var(--ok-white);text-decoration:none;transition:background .15s,box-shadow .15s}
+.ok-button:hover {background:var(--ok-soft)}
+.ok-button--primary {background:var(--ok-lime);border-color:#c7e75e;font-weight:600}
+.ok-button--primary:hover {background:#d2f25f}
+.ok-button--ghost {background:transparent;border-color:transparent;color:#676c68}
+.ok-button--danger {color:var(--ok-danger)}
+.ok-button--sm {padding:5px 10px;font-size:var(--ok-text-sm);line-height:20px}
+.ok-button:disabled {opacity:.45;cursor:not-allowed}
+.ok-button:focus-visible,.ok-navigation :focus-visible,.ok-composer textarea:focus-visible,.ok-checkbox-row input:focus-visible {outline:2px solid var(--ok-lav);outline-offset:3px}
+.ok-icon-button {padding:0;width:40px;height:40px;flex-shrink:0}
+.ok-badge {display:inline-flex;align-items:center;font-size:var(--ok-text-sm);line-height:20px;color:#74787d;border:1px solid var(--ok-line);padding:7px 12px;border-radius:999px;background:#f7f8f5}
+.ok-avatar {display:inline-grid;place-items:center;width:42px;height:42px;border-radius:12px;background:#d8d5e9;color:#625d89;font-size:16px;font-weight:700;flex-shrink:0;overflow:hidden}
+.ok-avatar--sm {width:36px;height:36px;border-radius:50%}
+.ok-avatar img {width:100%;height:100%;object-fit:contain}
+.ok-card {background:var(--ok-white);border:1px solid var(--ok-line);border-radius:var(--ok-radius-md);padding:var(--ok-space-4);box-shadow:var(--ok-shadow);color:var(--ok-ink)}
+.ok-card-head {display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:15px}
+.ok-card-head h2 {margin:0;font-size:var(--ok-text-lg);line-height:24px;font-weight:600}
+.ok-card p {font-size:14px;line-height:1.6}
+.ok-checkbox-row {display:flex;gap:9px;align-items:flex-start;padding:12px 0;color:var(--ok-ink);cursor:pointer}
+.ok-checkbox-row + .ok-checkbox-row {border-top:1px solid var(--ok-line)}
+.ok-checkbox-row input {width:17px;height:17px;accent-color:var(--ok-ink);flex-shrink:0;margin:3px 0}
+.ok-checkbox-label {font-size:13px;line-height:20px}
+.ok-checkbox-row small {display:block;color:var(--ok-muted);font-size:11px;line-height:18px;margin-top:2px}
+.ok-app {display:grid;grid-template-columns:var(--ok-sidebar-width) minmax(0,1fr);height:100dvh;min-height:540px;background:var(--ok-paper);color:var(--ok-ink)}
+.ok-sidebar {margin:24px 18px 24px 24px;background:var(--ok-sidebar);border:1px solid #e8e9e3;border-radius:16px;padding:16px 12px;display:flex;flex-direction:column;gap:27px;min-height:0;overflow:auto}
+.ok-brand {display:flex;align-items:center;gap:10px;background:var(--ok-white);border-radius:13px;padding:11px 8px;min-height:68px}
+.ok-brand strong {font-size:24px;line-height:32px;letter-spacing:-.04em}
+.ok-brand small {display:block;color:#92978b;font-size:10px;line-height:16px;letter-spacing:.08em}
+.ok-navigation {display:grid;gap:7px}
+.ok-navigation button,.ok-navigation a {font:inherit;display:flex;align-items:center;gap:13px;padding:12px 15px;border:0;border-radius:12px;background:transparent;color:#676c68;font-size:16px;line-height:24px;text-align:left;cursor:pointer;text-decoration:none;position:relative}
+.ok-navigation button:hover,.ok-navigation a:hover {background:#e7e9e1}
+.ok-navigation [aria-current="page"] {background:#1d211f;color:var(--ok-white);font-weight:600;box-shadow:0 6px 16px #161b1720}
+.ok-navigation [aria-current="page"]::before {content:"";position:absolute;left:0;top:12px;bottom:12px;width:3px;background:var(--ok-lime);border-radius:0 3px 3px 0}
+.ok-navigation img {width:22px;height:22px}
+.ok-sidebar-footer {margin-top:auto;display:grid;gap:13px}
+.ok-main {min-width:0;min-height:0;display:flex;flex-direction:column}
+.ok-page-header {padding:40px 40px 12px;min-height:120px;display:flex;align-items:center;justify-content:space-between;gap:20px}
+.ok-page-header h1 {font-size:var(--ok-text-title);line-height:1.2;letter-spacing:-.045em;margin:0 0 8px;font-weight:600}
+.ok-page-header p {font-size:14px;line-height:22px;color:var(--ok-muted);margin:0}
+.ok-header-actions {display:flex;align-items:center;gap:10px}
+.ok-context {padding:24px 18px;overflow:auto;min-width:0}
+.ok-context-heading {display:flex;align-items:center;justify-content:space-between;margin-bottom:17px;font-size:14px;min-height:40px}
+.ok-context .ok-card {margin-bottom:12px}
+.ok-message {display:flex;align-items:flex-start;gap:14px;margin:0 0 34px;font-size:16px;line-height:24px}
+.ok-message-body {min-width:0;max-width:760px}
+.ok-message--user {justify-content:flex-end}
+.ok-message--user .ok-message-body {max-width:85%}
+.ok-user-bubble {max-width:485px;background:var(--ok-soft);border:1px solid #eeefeb;border-radius:18px 18px 4px 18px;padding:16px 20px;overflow-wrap:anywhere;white-space:pre-wrap}
+.ok-message-meta {font-size:12px;line-height:20px;color:var(--ok-muted);margin:2px 0 8px}
+.ok-message--user .ok-message-meta {text-align:right;margin-top:8px}
+.ok-reply {overflow-wrap:anywhere}
+.ok-reply p {margin:0 0 12px}
+.ok-message-actions {display:flex;gap:3px;margin-top:10px}
+.ok-composer {width:100%;margin:0 auto;background:var(--ok-white);border:1px solid #dddfdc;border-radius:var(--ok-radius-lg);box-shadow:0 6px 28px #1b1d1d0a;min-height:134px;padding:18px 18px 15px}
+.ok-composer textarea {font:inherit;border:0;resize:vertical;min-height:62px;max-height:160px;width:100%;font-size:16px;line-height:24px;color:var(--ok-ink);background:transparent}
+.ok-composer textarea::placeholder {color:#a4a6a8}
+.ok-composer-bottom {display:flex;align-items:center;gap:9px}
+.ok-composer-bottom>.ok-button {margin-left:auto;min-width:42px}
+.ok-composer-tools {display:flex;gap:9px;flex-wrap:wrap}
+.ok-error {color:var(--ok-danger);font-size:13px;margin:8px 0 0}
+.ok-empty {padding:48px 24px;text-align:center}
+.ok-empty h2 {font-size:20px}
+.ok-empty p {font-size:14px;color:var(--ok-muted)}
+.ok-modal {width:min(560px,calc(100% - 36px));max-height:calc(100dvh - 48px);overflow:auto;border:0;border-radius:20px;padding:25px;background:var(--ok-white);color:var(--ok-ink);box-shadow:0 24px 90px #0002}
+.ok-modal::backdrop {background:#13171580}
+.ok-modal-head {display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:18px}
+.ok-modal-head h2 {font-size:20px;line-height:28px;margin:0}
+.ok-toast {position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:#1b1d1f;color:white;padding:10px 16px;border-radius:10px;font-size:13px;z-index:100;box-shadow:0 8px 30px #0002;max-width:calc(100% - 32px)}
+.ok-toast--empty {padding:0;box-shadow:none}
+@media(max-width:1160px){.ok-context {display:none}}
+@media(max-width:700px){
+.ok-app {grid-template-columns:1fr;min-height:100dvh;height:auto}
+.ok-sidebar {margin:12px;padding:12px;gap:12px;overflow:visible}
+.ok-brand {display:none}.ok-sidebar-footer {display:none}
+.ok-navigation {display:flex;overflow-x:auto;gap:4px}
+.ok-navigation button,.ok-navigation a {white-space:nowrap;flex-shrink:0;font-size:14px;padding:10px}
+.ok-navigation img {width:18px;height:18px}
+.ok-page-header {min-height:82px;padding:12px 20px;flex-wrap:wrap}
+.ok-page-header h1 {font-size:24px}.ok-page-header p {font-size:12px}
+.ok-header-actions .ok-badge {display:none}
+.ok-message {font-size:14px;gap:10px}.ok-message .ok-avatar {width:34px;height:34px}
+.ok-composer {padding:14px;min-height:120px}.ok-composer-tools .ok-button {font-size:12px;padding:6px 8px}
+}
+@media(prefers-reduced-motion:reduce){.ok-button{transition:none}}
