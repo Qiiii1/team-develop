@@ -1,3 +1,5 @@
+> main 已接入产品前端。运行 `npm ci`、`npm start` 后访问 http://127.0.0.1:4185 。接入范围与限制见 [前后端整合说明](docs/FRONTEND-INTEGRATION.md)。
+
 # 团队 Develop · 后端与前端协作
 
 本机部署、局域网访问的团队 AI 空间，每位成员使用自己的 API Key。当前后端版本 **0.2.0**，本分支为 **`backend`**，提供可运行的后端、参考前端和接口文档。

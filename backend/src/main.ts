@@ -20,6 +20,7 @@ if (host !== '127.0.0.1' && host !== 'localhost' && host !== '::1' && !tls && pr
   throw new Error('局域网访问请配置 HTTPS；仅使用测试账号的临时 HTTP 试用可显式设置 HARNESS_ALLOW_INSECURE_LAN=1。');
 }
 const { app } = await createApp({ dataDirectory: resolve(process.env.HARNESS_WEB_DATA_DIR ?? '.local/web'),
+  frontendRoot: process.env.HARNESS_WEB_FRONTEND === '0' ? undefined : resolve('frontend'),
   dbPath: process.env.HARNESS_WEB_DB, keyPath: process.env.HARNESS_WEB_MASTER_KEY_FILE,
   masterKey: process.env.HARNESS_WEB_MASTER_KEY, allowedHosts, allowedOrigins, tls });
 try { await app.listen({ host, port }); }

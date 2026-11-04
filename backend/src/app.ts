@@ -1,3 +1,4 @@
+import { registerMaterialRoute } from './material.js';
 import Fastify, { type FastifyRequest, type FastifyReply, type HTTPMethods, type FastifyError } from 'fastify';
 import cookie from '@fastify/cookie';
 import rateLimit from '@fastify/rate-limit';
@@ -5,6 +6,7 @@ import { and, asc, eq, isNull, lt, sql } from 'drizzle-orm';
 import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { registerProductFrontend } from './product-frontend.js';
 import { openDatabase } from './database.js';
 import { registerAdminRoutes } from './admin.js';
 import { registerCollaborationRoutes, type ModelProvider } from './collaboration.js';
@@ -37,7 +39,7 @@ const sessionLifetime = 7 * 24 * 60 * 60 * 1000;
 export type AppOptions = {
   dataDirectory?: string; dbPath?: string; keyPath?: string; masterKey?: string;
   allowedHosts?: string[]; allowedOrigins?: string[]; tls?: { key: Buffer; cert: Buffer }; rateLimits?: boolean;
-  migrationsPath?: string; webRoot?: string; now?: () => number;
+  migrationsPath?: string; webRoot?: string; frontendRoot?: string; now?: () => number;
   modelProvider?: ModelProvider;
 };
 
@@ -303,8 +305,17 @@ export async function createApp(options: AppOptions = {}) {
     ['/', 'index.html', 'text/html; charset=utf-8'], ['/admin', 'index.html', 'text/html; charset=utf-8'],  ['/app.js', 'app.js', 'text/javascript; charset=utf-8'], ['/config.js', 'config.js', 'text/javascript; charset=utf-8'],
     ['/collaboration.js', 'collaboration.js', 'text/javascript; charset=utf-8'], ['/styles.css', 'styles.css', 'text/css; charset=utf-8'], ['/admin.js', 'admin.js', 'text/javascript; charset=utf-8'], ['/favicon.svg', 'favicon.svg', 'image/svg+xml'],
   ]) {
+    if (url === '/' && options.frontendRoot) continue;
     const content = readFileSync(resolve(options.webRoot ?? 'web', file));
     app.route({ method: ['GET', 'HEAD'], url, handler: (_req, reply) => reply.header('Cache-Control', 'no-cache').type(type).send(content) });
+  }
+  if (options.frontendRoot) {
+    registerProductFrontend(app, options.frontendRoot);
+    registerMaterialRoute(app, options.frontendRoot, req => {
+      const identity=auth(req);const row=db.select().from(aiConfigs).where(eq(aiConfigs.userId,identity.user.id)).get();
+      if(!row) fail(409,'请先在账号管理中配置 DeepSeek API');
+      return {apiKey:decryptKey(masterKey,row),model:row.model};
+    },options.modelProvider);
   }
   await app.ready();
   return { app, db };
