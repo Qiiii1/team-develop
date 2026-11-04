@@ -7,7 +7,8 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { openDatabase } from './database.js';
 import { registerAdminRoutes } from './admin.js';
-import { registerCollaborationRoutes, type ModelProvider } from './collaboration.js';
+import { registerFrontendRoutes } from './frontend.js';
+import { deepSeekProvider, registerCollaborationRoutes, type ModelProvider } from './collaboration.js';
 import { aiConfigs, sessions, teamInvites, teamMembers, teams, users } from './schema.js';
 import { csrfToken, decryptKey, digest, encryptKey, equal, hashPassword, loadMasterKey, token, verifyPassword } from './security.js';
 
@@ -25,12 +26,12 @@ const num = { type: 'integer' };
 const nullableTime = { anyOf: [num, { type: 'null' }] };
 const object = (properties: Record<string, unknown>, required = Object.keys(properties)) => ({ type: 'object', additionalProperties: false, properties, required });
 const ok = object({ ok: { type: 'boolean' } });
-const publicUser = object({ id: s(), username: s(), displayName: s(), isSystemAdmin: { type: 'boolean' } });
+const publicUser = object({ id: s(), username: s(), displayName: s(), avatarId: s(), isSystemAdmin: { type: 'boolean' } });
 const authResponse = object({ user: publicUser, csrfToken: s(), sessionToken: s() }, ['user', 'csrfToken']);
 const teamResponse = object({ id: s(), name: s(), ownerId: s(), revision: num, createdAt: num, role: s(), archivedAt: nullableTime });
 const inviteResponse = object({ id: s(), expiresAt: num, maxUses: num, usedCount: num, revokedAt: nullableTime, createdAt: num });
 const configResponse = object({ configured: { type: 'boolean' }, provider: s(), model: s(), revision: num, updatedAt: nullableTime });
-const visibleUser = (row: typeof users.$inferSelect) => ({ id: row.id, username: row.username, displayName: row.displayName, isSystemAdmin: row.isSystemAdmin });
+const visibleUser = (row: typeof users.$inferSelect) => ({ id: row.id, username: row.username, displayName: row.displayName, avatarId: row.avatarId, isSystemAdmin: row.isSystemAdmin });
 const cookieName = 'harness_session';
 const sessionLifetime = 7 * 24 * 60 * 60 * 1000;
 
@@ -38,6 +39,7 @@ export type AppOptions = {
   dataDirectory?: string; dbPath?: string; keyPath?: string; masterKey?: string;
   allowedHosts?: string[]; allowedOrigins?: string[]; tls?: { key: Buffer; cert: Buffer }; rateLimits?: boolean;
   migrationsPath?: string; webRoot?: string; now?: () => number;
+  frontendRoot?: string;
   modelProvider?: ModelProvider;
 };
 
@@ -84,6 +86,13 @@ export async function createApp(options: AppOptions = {}) {
     if (!['owner', 'admin'].includes(record.role)) fail(403, '需要团队管理员权限。');
     return record;
   }
+  function sessionIdentity(raw: string | undefined, transport: 'cookie' | 'bearer'): Auth | null {
+    if (!raw || !/^[A-Za-z0-9_-]{43}$/.test(raw)) return null;
+    const record = db.select({ session: sessions, user: users }).from(sessions).innerJoin(users, eq(sessions.userId, users.id))
+      .where(and(eq(sessions.tokenHash, digest(raw)), isNull(sessions.revokedAt), isNull(users.disabledAt))).get();
+    return record && record.session.expiresAt > now()
+      ? { user: record.user, sessionId: record.session.id, csrf: csrfToken(masterKey, raw), transport } : null;
+  }
   app.addHook('onRequest', async (req, reply) => {
     reply.header('X-Content-Type-Options', 'nosniff');
     reply.header('Referrer-Policy', 'no-referrer');
@@ -96,7 +105,10 @@ export async function createApp(options: AppOptions = {}) {
     }
     catch { fail(403, '访问地址无效。'); }
     if (!allowedHosts.has(hostname!)) fail(403, '该访问地址未配置，请使用服务启动时显示的地址。');
-    if (!req.url.startsWith('/api/')) return;
+    if (!req.url.startsWith('/api/')) {
+      req.auth = sessionIdentity(req.cookies[cookieName], 'cookie');
+      return;
+    }
     reply.header('Cache-Control', 'no-store');
     const origin = req.headers.origin;
     const ownOrigin = new URL(`${options.tls ? 'https' : 'http'}://${host}`).origin;
@@ -122,11 +134,7 @@ export async function createApp(options: AppOptions = {}) {
     if (req.headers.authorization && !pagesOrigin) fail(403, '此来源不能使用跨站会话。');
     if (pagesOrigin && req.headers['x-harness-session'] !== 'bearer') fail(403, '跨站访问需要显式会话。');
     const sessionToken = pagesOrigin ? bearer : req.cookies[cookieName];
-    if (sessionToken && /^[A-Za-z0-9_-]{43}$/.test(sessionToken)) {
-      const record = db.select({ session: sessions, user: users }).from(sessions).innerJoin(users, eq(sessions.userId, users.id))
-        .where(and(eq(sessions.tokenHash, digest(sessionToken)), isNull(sessions.revokedAt), isNull(users.disabledAt))).get();
-      if (record && record.session.expiresAt > now()) req.auth = { user: record.user, sessionId: record.session.id, csrf: csrfToken(masterKey, sessionToken), transport: pagesOrigin ? 'bearer' : 'cookie' };
-    }
+    req.auth = sessionIdentity(sessionToken, pagesOrigin ? 'bearer' : 'cookie');
     const publicRoute = ['/api/v1/auth/register', '/api/v1/auth/login'].includes(req.routeOptions.url ?? '');
     if (!publicRoute) {
       const identity = auth(req);
@@ -158,7 +166,7 @@ export async function createApp(options: AppOptions = {}) {
     // Password derivation happens outside transactions; concurrent registration is resolved by UNIQUE.
     const passwordHash = await hashPassword(input.password);
     if (db.select({ id: users.id }).from(users).where(eq(users.username, username)).get()) fail(409, '这个登录名已被使用。');
-    const user = { id: randomUUID(), username, displayName, passwordHash, createdAt: now(), disabledAt: null, aiConfigRevision: 0, isSystemAdmin: false, adminRevision: 0 };
+    const user = { id: randomUUID(), username, displayName, avatarId: 'ip-1', passwordHash, createdAt: now(), disabledAt: null, aiConfigRevision: 0, isSystemAdmin: false, adminRevision: 0 };
     db.insert(users).values(user).run();
     reply.code(201);
     return startSession(req, reply, user);
@@ -176,6 +184,13 @@ export async function createApp(options: AppOptions = {}) {
     return { ok: true };
   }, ok, object({}));
   add('GET', '/me', req => ({ user: visibleUser(auth(req).user), csrfToken: auth(req).csrf }), authResponse);
+  add('PATCH', '/me/profile', req => {
+    const input = req.body as { displayName: string; avatarId: string };
+    const displayName = input.displayName.trim();
+    if (!displayName) fail(400, '请填写显示姓名。');
+    const updated = db.update(users).set({ displayName, avatarId: input.avatarId }).where(eq(users.id, auth(req).user.id)).returning().get()!;
+    return { user: visibleUser(updated) };
+  }, object({ user: publicUser }), object({ displayName: s(1, 40), avatarId: { ...s(), pattern: '^ip-[1-9]$' } }));
   add('GET', '/teams', req => ({ teams: db.select({ id: teams.id, name: teams.name, ownerId: teams.ownerId, revision: teams.revision, createdAt: teams.createdAt, role: teamMembers.role, archivedAt: teams.archivedAt })
     .from(teamMembers).innerJoin(teams, eq(teamMembers.teamId, teams.id))
     .where(and(eq(teamMembers.userId, auth(req).user.id), isNull(teamMembers.removedAt))).orderBy(asc(teams.createdAt)).all() }), object({ teams: { type: 'array', items: teamResponse } }));
@@ -192,10 +207,10 @@ export async function createApp(options: AppOptions = {}) {
     const membership = member(req);
     return { ...db.select().from(teams).where(eq(teams.id, membership.teamId)).get()!, role: membership.role };
   }, teamResponse);
-  const memberResponse = object({ userId: s(), displayName: s(), role: s(), joinedAt: num });
+  const memberResponse = object({ userId: s(), displayName: s(), avatarId: s(), role: s(), joinedAt: num });
   add('GET', '/teams/:teamId/members', req => {
     const membership = member(req);
-    return { members: db.select({ userId: users.id, displayName: users.displayName, role: teamMembers.role, joinedAt: teamMembers.joinedAt }).from(teamMembers)
+    return { members: db.select({ userId: users.id, displayName: users.displayName, avatarId: users.avatarId, role: teamMembers.role, joinedAt: teamMembers.joinedAt }).from(teamMembers)
       .innerJoin(users, eq(users.id, teamMembers.userId)).where(and(eq(teamMembers.teamId, membership.teamId), isNull(teamMembers.removedAt))).orderBy(asc(teamMembers.joinedAt)).all() };
   }, object({ members: { type: 'array', items: memberResponse } }));
   add('GET', '/teams/:teamId/invites', req => {
@@ -265,6 +280,15 @@ export async function createApp(options: AppOptions = {}) {
     return { configured: Boolean(config), provider: config?.provider ?? 'deepseek', model: config?.model ?? 'deepseek-flash', revision: user.revision, updatedAt: config?.updatedAt ?? null };
   }
   add('GET', '/me/ai-config', req => configMetadata(auth(req).user.id), configResponse);
+  add('POST', '/me/ai-config/test', async req => {
+    const input = req.body as { model: string; apiKey?: string };
+    const identity = auth(req), previous = db.select().from(aiConfigs).where(eq(aiConfigs.userId, identity.user.id)).get();
+    const apiKey = input.apiKey ?? (previous ? decryptKey(masterKey, previous) : fail(409, '请填写自己的 API Key。'));
+    try {
+      await (options.modelProvider ?? deepSeekProvider)({ apiKey, model: input.model, messages: [{ role: 'user', content: '只回复 OK' }], signal: AbortSignal.timeout(30_000) });
+    } catch { fail(502, '连接检查失败，请核对自己的 Key、模型与额度后重试。'); }
+    return { ok: true };
+  }, ok, object({ model: s(1, 100), apiKey: { ...s(1, 512), pattern: '^[!-~]+$' } }, ['model']), 5);
   add('PUT', '/me/ai-config', req => {
     const input = body(req), userId = auth(req).user.id, model = input.model.trim();
     if (!model) fail(400, '请填写模型名称。');
@@ -296,11 +320,25 @@ export async function createApp(options: AppOptions = {}) {
   app.options('/api/*', (_req, reply) => reply.code(204).send());
   registerAdminRoutes(app, db, now);
   registerCollaborationRoutes(app, sqlite, { masterKey, now, fail, member, provider: options.modelProvider, rateLimits: options.rateLimits });
+  if (options.frontendRoot) registerFrontendRoutes(app, options.frontendRoot, req => {
+    const identity = req.auth;
+    if (!identity) return null;
+    const list = db.select({ id: teams.id, name: teams.name, archivedAt: teams.archivedAt, role: teamMembers.role })
+      .from(teamMembers).innerJoin(teams, eq(teamMembers.teamId, teams.id))
+      .where(and(eq(teamMembers.userId, identity.user.id), isNull(teamMembers.removedAt))).all().filter(t => t.archivedAt === null);
+    const requested = new URL(req.url, 'http://localhost').searchParams.get('project');
+    const team = list.find(t => t.id === requested) ?? (requested ? null : list[0] ?? null);
+    const members = team ? db.select({ userId: users.id, displayName: users.displayName, avatarId: users.avatarId, role: teamMembers.role })
+      .from(teamMembers).innerJoin(users, eq(teamMembers.userId, users.id))
+      .where(and(eq(teamMembers.teamId, team.id), isNull(teamMembers.removedAt))).all() : [];
+    return { user: visibleUser(identity.user), teams: list, team, members };
+  });
   app.get('/admin/', (_req, reply) => reply.redirect('/admin'));
   app.get('/health', { schema: { response: { 200: ok } } }, () => ({ ok: true }));
   // Only these public assets can be served; backend files and data directories are never mounted.
   for (const [url, file, type] of [
-    ['/', 'index.html', 'text/html; charset=utf-8'], ['/admin', 'index.html', 'text/html; charset=utf-8'],  ['/app.js', 'app.js', 'text/javascript; charset=utf-8'], ['/config.js', 'config.js', 'text/javascript; charset=utf-8'],
+    ...(!options.frontendRoot ? [['/', 'index.html', 'text/html; charset=utf-8']] : []),
+    ['/classic', 'index.html', 'text/html; charset=utf-8'], ['/admin', 'index.html', 'text/html; charset=utf-8'],  ['/app.js', 'app.js', 'text/javascript; charset=utf-8'], ['/config.js', 'config.js', 'text/javascript; charset=utf-8'],
     ['/collaboration.js', 'collaboration.js', 'text/javascript; charset=utf-8'], ['/styles.css', 'styles.css', 'text/css; charset=utf-8'], ['/admin.js', 'admin.js', 'text/javascript; charset=utf-8'], ['/favicon.svg', 'favicon.svg', 'image/svg+xml'],
   ]) {
     const content = readFileSync(resolve(options.webRoot ?? 'web', file));

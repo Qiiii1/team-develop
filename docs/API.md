@@ -36,6 +36,7 @@
 | `POST /auth/register` | `{username,password,displayName}` | `201`，`{user,csrfToken}`；跨域额外有 `sessionToken` |
 | `POST /auth/login` | `{username,password}` | `{user,csrfToken}`；跨域额外有 `sessionToken` |
 | `GET /me` | 无 | `{user,csrfToken}` |
+| `PATCH /me/profile` | `{displayName,avatarId}` | `{user}`；显示姓名 1–40 字符，头像 `ip-1` 至 `ip-9` |
 | `POST /auth/logout` | `{}` | `{ok:true}`，当前会话撤销 |
 
 `username`：3–32 字符，字母、数字、`_ . -`，不区分大小写。`password`：8–128 字符。`displayName`：1–40 字符，不能全空白。注册不会自动加入团队，也不会自动授予系统管理员。
@@ -46,6 +47,7 @@
     "id": "用户ID",
     "username": "alice",
     "displayName": "Alice",
+    "avatarId": "ip-1",
     "isSystemAdmin": false
   },
   "csrfToken": "服务端返回的CSRF令牌"
@@ -64,7 +66,7 @@
 | `POST /teams` | `{name}` | `201`，`Team`；名称 1–80 字符，创建者为 owner |
 | `POST /teams/join` | `{token}` | `Team`；邀请码为 43 字符；每 IP 每分钟最多 30 次 |
 | `GET /teams/:teamId` | 无 | `Team`，有效成员可读 |
-| `GET /teams/:teamId/members` | 无 | `{members:[{userId,displayName,role,joinedAt}]}` |
+| `GET /teams/:teamId/members` | 无 | `{members:[{userId,displayName,avatarId,role,joinedAt}]}` |
 | `PATCH /teams/:teamId/members/:userId` | `{role:"admin"或"member"}` | `{ok:true}`；仅 owner，可调整非 owner |
 | `DELETE /teams/:teamId/members/:userId` | `{}` | `{ok:true}`；owner 可移除非 owner，admin 可移除 member |
 | `GET /teams/:teamId/invites` | 无 | `{invites: Invite[]}`；owner / admin |
@@ -92,10 +94,13 @@
 | `GET /me/ai-config` | 无 | 上述配置元信息 |
 | `PUT /me/ai-config` | `{provider:"deepseek",model,revision,apiKey?}` | 更新后的配置元信息 |
 | `DELETE /me/ai-config` | `{revision}` | 删除后的配置元信息 |
+| `POST /me/ai-config/test` | `{model,apiKey?}` | `{ok:true}`；用户明确点击后才检查连接，每 IP 每分钟最多 5 次 |
 
 先 GET 最新 `revision` 再写；成功后使用响应里的新 revision。删除也会增加 revision，不会归零。旧 revision 返回 `409`。首次保存必须带 `apiKey`，已有配置省略该字段表示保留 Key，不能传空字符串。
 
 `model` 为 1–100 字符；`apiKey` 为 1–512 个非空白 ASCII 可打印字符。接口不接受自定义提供方地址或他人 userId。Key 加密保存在后端，不在任何读取响应中回显；保存成功不代表已经验证服务商连通性。
+
+连接检查使用提交的草稿 Key，省略时使用本人已保存的 Key；草稿不会保存。检查会实际请求模型，测试代码注入模拟提供方。失败返回不包含任意提供方响应内容的安全错误。与普通保存配置不同，此操作可能产生模型用量。
 
 ## 5. 个人对话与公共讨论
 

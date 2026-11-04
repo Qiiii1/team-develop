@@ -4,6 +4,7 @@ import { sqliteTable, text, integer, primaryKey, check, index } from 'drizzle-or
 export const users = sqliteTable('users', {
   id: text('id').primaryKey(), username: text('username_normalized').notNull().unique(),
   displayName: text('display_name').notNull(), passwordHash: text('password_hash').notNull(),
+  avatarId: text('avatar_id').notNull().default('ip-1'),
   createdAt: integer('created_at').notNull(), disabledAt: integer('disabled_at'),
   aiConfigRevision: integer('ai_config_revision').notNull().default(0),
   isSystemAdmin: integer('is_system_admin', { mode: 'boolean' }).notNull().default(false),

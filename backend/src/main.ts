@@ -1,5 +1,5 @@
 import { networkInterfaces } from 'node:os';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { createApp } from './app.js';
 
@@ -21,7 +21,8 @@ if (host !== '127.0.0.1' && host !== 'localhost' && host !== '::1' && !tls && pr
 }
 const { app } = await createApp({ dataDirectory: resolve(process.env.HARNESS_WEB_DATA_DIR ?? '.local/web'),
   dbPath: process.env.HARNESS_WEB_DB, keyPath: process.env.HARNESS_WEB_MASTER_KEY_FILE,
-  masterKey: process.env.HARNESS_WEB_MASTER_KEY, allowedHosts, allowedOrigins, tls });
+  masterKey: process.env.HARNESS_WEB_MASTER_KEY, allowedHosts, allowedOrigins, tls,
+  frontendRoot: existsSync('frontend/index.html') ? resolve('frontend') : undefined });
 try { await app.listen({ host, port }); }
 catch (error) { await app.close(); throw error; }
 const activePort = (app.server.address() as { port: number }).port, scheme = tls ? 'https' : 'http';

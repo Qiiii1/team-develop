@@ -15,7 +15,7 @@
     "test:web": "node --import tsx --test backend/test/*.test.ts",
     "test:browser": "playwright test",
     "db:generate": "drizzle-kit generate",
-    "check:web": "tsc -p tsconfig.json --noEmit && node --check web/app.js && node --check web/admin.js && node --check web/collaboration.js",
+    "check:web": "tsc -p tsconfig.json --noEmit && node --check web/app.js && node --check web/admin.js && node --check web/collaboration.js && node backend/scripts/check-frontend.mjs",
     "start:legacy": "node --env-file-if-exists=.env.local server.mjs",
     "dev:legacy": "node --env-file-if-exists=.env.local --watch server.mjs",
     "admin:grant": "npm run build:web && node --env-file-if-exists=.env.web.local dist/backend/admin-cli.js",

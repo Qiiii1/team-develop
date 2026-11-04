@@ -1,0 +1,1 @@
+ALTER TABLE `users` ADD `avatar_id` text DEFAULT 'ip-1' NOT NULL;

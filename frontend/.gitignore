@@ -1,0 +1,9 @@
+.api-settings.local.json
+.runtime/
+.qa-temp/
+*.log
+.env
+.env.*
+__pycache__/
+
+.invitation-state.local.*
