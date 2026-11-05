@@ -129,7 +129,8 @@ test('personal Keys stay encrypted, isolated and hidden; configuration revision 
   const row = db.select().from(aiConfigs).get()!;
   assert.notEqual(row.ciphertext, input.apiKey); assert.equal(decryptKey(key, row), input.apiKey);
   assert.throws(() => decryptKey(key, { ...row, userId: 'someone-else' }));
-  assert.equal((await stat(join(directory, 'secrets/master.key'))).mode & 0o777, 0o600);
+  // Windows reports synthesized POSIX mode bits; its filesystem permissions use ACLs.
+  if (process.platform !== 'win32') assert.equal((await stat(join(directory, 'secrets/master.key'))).mode & 0o777, 0o600);
   const update = await a.request('/me/ai-config', 'PUT', { provider: 'deepseek', model: 'another-model', revision: 1 }); assert.equal(update.status, 200);
   assert.equal(decryptKey(key, db.select().from(aiConfigs).get()!), input.apiKey);
   const bob = await b.request('/me/ai-config', 'PUT', { ...input, apiKey: 'sk-bob-test-secret' }); assert.equal(bob.status, 200);

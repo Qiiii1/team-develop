@@ -24,9 +24,10 @@
     if (boot.team) {
       localStorage.setItem('ok-ah.current-project.v1', boot.team.id);
       localStorage.setItem('ok-ah.joined-project.' + boot.team.id, JSON.stringify({ accountId: boot.user.id }));
+      localStorage.setItem('ok-ah.backend-members.' + boot.team.id, JSON.stringify(boot.members));
     }
   }
-  async function api(path, method = 'GET', body) {
+  async function api(path, method = 'GET', body, signal) {
     if (method !== 'GET' && !csrf) {
       identityRequest ||= nativeFetch('/api/v1/me', { credentials: 'same-origin' }).then(async r => {
         const d = await r.json(); if (!r.ok) throw new Error(d.error || '请重新登录'); csrf = d.csrfToken;
@@ -34,7 +35,7 @@
       await identityRequest;
     }
     const response = await nativeFetch('/api/v1' + path, {
-      method, credentials: 'same-origin', headers: method === 'GET' ? {} : { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
+      method, signal, credentials: 'same-origin', headers: method === 'GET' ? {} : { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
       ...(method !== 'GET' ? { body: JSON.stringify(body ?? {}) } : {}),
     });
     const data = await response.json();
@@ -50,6 +51,17 @@
   }
   async function compatibility(url, init = {}) {
     const path = url.pathname;
+    if (path === '/api/material-summary') {
+      const file = init.body;
+      if (!(file instanceof Blob)) throw new Error('请选择需要提取摘要的文件');
+      if (!file.size || file.size > 50 * 1024 * 1024) throw new Error('文件为空或超过50MB');
+      const bytes = new Uint8Array(await file.arrayBuffer());
+      let binary = '';
+      for (let i = 0; i < bytes.length; i += 8192) binary += String.fromCharCode(...bytes.subarray(i, i + 8192));
+      const headers = new Headers(init.headers);
+      const name = file.name || decodeURIComponent(headers.get('X-File-Name') || 'document.txt');
+      return api('/material-summary', 'POST', { name, data: btoa(binary) }, init.signal);
+    }
     const body = typeof init.body === 'string' ? JSON.parse(init.body || '{}') : {};
     if (path === '/api/invitation-session') return { account: boot?.user ? account(boot.user) : null };
     if (path === '/api/invitation-members') {
@@ -70,7 +82,6 @@
       return { ...config, provider: 'DeepSeek', endpoint: 'https://api.deepseek.com/v1' };
     }
     if (path === '/api/ai-settings/test') return api('/me/ai-config/test', 'POST', { model: body.model || 'deepseek-flash', ...(body.apiKey ? { apiKey: body.apiKey } : {}) });
-    if (path === '/api/material-summary') throw new Error('文件摘要尚未接入团队后端。当前文件与工作台、黑板内容仅保存在此浏览器。');
     throw new Error('该原型接口尚未接入后端。');
   }
   window.fetch = async (value, init = {}) => {
@@ -119,13 +130,24 @@
     const form = document.getElementById('composer'), thread = document.getElementById('thread'), question = document.getElementById('question');
     if (!form || !thread || !question || !currentTeam()) return;
     const team = currentTeam(), threadKey = 'ok-ah.backend-thread.' + team;
-    let threadId = localStorage.getItem(threadKey), current = null, pending = false, lastRequest = null;
+    let threadId = localStorage.getItem(threadKey), current = null, pending = false, lastRequest = null, messages = [], hasOlder = false;
     const scope = `/teams/${team}`;
     const valid = () => generation === routeGeneration && thread.isConnected;
-    const render = messages => {
+    const tools = document.createElement('div'); tools.className = 'backend-chat-tools';
+    const select = document.createElement('select'); select.setAttribute('aria-label', '选择私人对话');
+    const fresh = document.createElement('button'); fresh.type = 'button'; fresh.textContent = '新对话';
+    const older = document.createElement('button'); older.type = 'button'; older.textContent = '更早的消息'; older.disabled = true;
+    tools.append(select, fresh, older); thread.before(tools);
+    const updateControls = () => { select.disabled = fresh.disabled = pending; older.disabled = pending || !hasOlder; };
+    const listThreads = async () => {
+      const result = await api(`${scope}/threads`); if (!valid()) return;
+      select.replaceChildren(new Option('新对话', ''), ...result.threads.map(t => new Option(t.title + ' · ' + new Date(t.updatedAt).toLocaleString('zh-CN'), t.id)));
+      select.value = threadId || '';
+    };
+    const render = items => {
       if (!valid()) return; thread.replaceChildren();
-      if (!messages.length) { const p = document.createElement('p'); p.className = 'backend-chat-empty'; p.textContent = '开始你的私人对话'; thread.append(p); }
-      for (const message of messages) {
+      if (!items.length) { const p = document.createElement('p'); p.className = 'backend-chat-empty'; p.textContent = '开始你的私人对话'; thread.append(p); }
+      for (const message of items) {
         const row = document.createElement('div'); row.className = message.role === 'user' ? 'message user ok-message ok-message--user' : 'message assistant ok-message';
         const box = document.createElement('div'); box.className = message.role === 'user' ? 'bubble-user' : 'reply-body backend-answer'; box.textContent = message.content; row.append(box);
         if (message.aiStatus === 'pending' || message.aiStatus === 'failed') {
@@ -138,10 +160,36 @@
     };
     const load = async () => {
       if (!threadId) { render([]); return; }
-      const result = await api(`${scope}/threads/${threadId}`); current = result; render(result.messages);
+      const requested = threadId, result = await api(`${scope}/threads/${requested}`);
+      if (!valid() || threadId !== requested) return;
+      if (!messages.length) hasOlder = result.messages.length === 100;
+      messages = [...new Map([...messages, ...result.messages].map(m => [m.id, m])).values()].sort((a, b) => a.seq - b.seq);
+      current = { ...result, messages }; render(messages); updateControls();
     };
     render([]);
+    await listThreads();
     if (threadId) try { await load(); } catch { threadId = null; localStorage.removeItem(threadKey); }
+    select.onchange = async () => {
+      if (pending) return;
+      threadId = select.value || null; messages = []; current = null; lastRequest = null; hasOlder = false;
+      if (threadId) localStorage.setItem(threadKey, threadId); else localStorage.removeItem(threadKey);
+      updateControls(); render([]);
+      try { await load(); } catch (error) { if (valid()) toast(error.message); }
+    };
+    fresh.onclick = () => { select.value = ''; void select.onchange(); };
+    older.onclick = async () => {
+      if (pending || !threadId || !messages.length) return;
+      const requested = threadId, height = thread.scrollHeight, top = thread.scrollTop;
+      pending = true; updateControls();
+      try {
+        const result = await api(`${scope}/threads/${requested}?before=${messages[0].seq}`);
+        if (!valid() || threadId !== requested) return;
+        hasOlder = result.messages.length === 100;
+        messages = [...new Map([...result.messages, ...messages].map(m => [m.id, m])).values()].sort((a, b) => a.seq - b.seq);
+        current = { ...result, messages }; render(messages); thread.scrollTop = top + thread.scrollHeight - height;
+      } catch (error) { if (valid()) toast(error.message); }
+      finally { pending = false; if (valid()) updateControls(); }
+    };
     const refresh = setInterval(() => { if (valid() && !document.hidden && threadId) void load().catch(() => {}); }, 4000);
     nativeAdd.call(document, 'ok-ah:route-dispose', () => clearInterval(refresh), { once: true });
     if (!valid()) { clearInterval(refresh); return; }
@@ -149,9 +197,11 @@
       event.preventDefault(); if (pending || !question.value.trim()) return;
       const content = question.value.trim(); const send = form.querySelector('[type="submit"]');
       pending = true; if (send) send.disabled = true;
+      updateControls();
       try {
         if (!threadId) {
           const result = await api(`${scope}/threads`, 'POST', { title: '个人工作区' }); threadId = result.thread.id; localStorage.setItem(threadKey, threadId);
+          await listThreads();
         }
         // Preserve the same request id after a transport failure to avoid duplicate model billing.
         if (!lastRequest || lastRequest.content !== content) lastRequest = { content, requestId: crypto.randomUUID() };
@@ -160,7 +210,7 @@
         const result = await request;
         if (valid()) { question.value = ''; lastRequest = null; await load(); toast(result.prompt.aiStatus === 'failed' ? result.prompt.aiError : '回答已保存'); }
       } catch (error) { if (valid()) { toast(error.message); if (threadId) await load().catch(() => {}); } }
-      finally { pending = false; if (send?.isConnected) send.disabled = false; }
+      finally { pending = false; if (send?.isConnected) send.disabled = false; if (valid()) updateControls(); }
     };
     const share = document.createElement('button'); share.type = 'button'; share.className = 'ok-button backend-share'; share.textContent = '分享最近的回答';
     share.onclick = async () => {

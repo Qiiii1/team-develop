@@ -1,6 +1,6 @@
 # Team Develop API 接口文档
 
-后端版本：`0.2.0`；更新：2026-11-04。本文对应 `backend/src/app.ts`、`admin.ts`、`collaboration.ts` 的已实现接口。开发启动和认证示例见[前端联调指南](前端联调.md)。
+后端版本：`0.2.0`；更新：2026-11-05。本文对应 `backend/src/app.ts`、`admin.ts`、`collaboration.ts`、`material.ts` 的已实现接口。开发启动和认证示例见[前端联调指南](前端联调.md)。
 
 ## 1. 通用约定
 
@@ -256,10 +256,21 @@ AI 非流式，最长等待约 60 秒；每成员同时最多一条 pending 请�
 
 后台只展示 AI 是否配置，不展示密码、Key、密文或会话令牌。没有读取他人私人对话、永久删除账号／团队、重置密码、转让发起人或消费明细接口。
 
-## 10. 当前范围与参考实现
+## 10. 资料摘要
 
-- 使用普通 JSON 请求与轮询，没有 SSE、WebSocket、文件上传或文件解析接口。
+仅启用产品前端（`frontendRoot`）时注册 `POST /material-summary`。使用当前登录用户保存的个人模型配置，同源请求需携带 CSRF token。
+
+请求体为 `{name,data}`：`name` 是带扩展名的文件名，1–180 字符；`data` 是标准 Base64 编码的文件内容，不含 Data URL 前缀。解码后须为 1 字节至 50 MiB，请求体上限为 70 MiB。这是通用小请求体限制之外的特例。
+
+成功返回 `{summary,truncated}`，摘要最多 300 字符；`truncated` 表示源文字截断。TXT、MD、CSV、TSV、JSON、LOG、HTML、XML 直接读取文字，PDF、DOCX、XLSX 通过本机 Python 解析器读取。最多提取 100000 字符，最多将其中 24000 字符提交模型。
+
+每 IP 每分钟最多 10 次，每位成员同时最多执行 1 个资料提取请求。缺少个人配置返回 `409`；内容无效返回 `400`；提取或模型调用失败返回 `502`。该操作使用本人的 API 额度，不持久化上传原文件，也不会自动把摘要发布为共享成果或团队决定。
+
+## 11. 当前范围与参考实现
+
+- 使用普通 JSON 请求与轮询，没有 SSE 或 WebSocket；资料摘要支持临时上传解析，暂无团队共享文件存储接口。
 - DeepSeek 请求由本机后端发起，模型提供方地址固定；前端不直接调用模型。
+- 产品页面接入封装：`frontend/backend-bridge.js`，接入边界见[前后端整合说明](FRONTEND-INTEGRATION.md)。
 - 基础会话与请求封装：`web/app.js`；协作页面：`web/collaboration.js`；管理页面：`web/admin.js`。
 - 后端集成测试：`backend/test/`；浏览器对接测试：`backend/test-ui/`，均使用隔离数据和模拟 Key。
 - 测试不证明实际模型 Key 有效，也不替代真实设备间的 LAN、HTTPS 证书与网络连通性验证。

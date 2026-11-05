@@ -7,6 +7,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { openDatabase } from './database.js';
 import { registerAdminRoutes } from './admin.js';
+import { registerMaterialRoute } from './material.js';
 import { registerFrontendRoutes } from './frontend.js';
 import { deepSeekProvider, registerCollaborationRoutes, type ModelProvider } from './collaboration.js';
 import { aiConfigs, sessions, teamInvites, teamMembers, teams, users } from './schema.js';
@@ -333,6 +334,12 @@ export async function createApp(options: AppOptions = {}) {
       .where(and(eq(teamMembers.teamId, team.id), isNull(teamMembers.removedAt))).all() : [];
     return { user: visibleUser(identity.user), teams: list, team, members };
   });
+  if (options.frontendRoot) registerMaterialRoute(app, options.frontendRoot, req => {
+    const identity = auth(req);
+    const row = db.select().from(aiConfigs).where(eq(aiConfigs.userId, identity.user.id)).get();
+    if (!row) fail(409, '请先在账号管理中配置 DeepSeek API');
+    return { apiKey: decryptKey(masterKey, row), model: row.model };
+  }, options.modelProvider);
   app.get('/admin/', (_req, reply) => reply.redirect('/admin'));
   app.get('/health', { schema: { response: { 200: ok } } }, () => ({ ok: true }));
   // Only these public assets can be served; backend files and data directories are never mounted.

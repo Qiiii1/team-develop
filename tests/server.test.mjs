@@ -189,7 +189,7 @@ test('AI settings save, apply immediately, preserve a hidden key and survive res
   assert.equal(providerCalls, 0);
   assert.deepEqual(state.tasks, []);
   assert.deepEqual(state.decisions, []);
-  assert.equal((await stat(configFile)).mode & 0o777, 0o600);
+  if (process.platform !== 'win32') assert.equal((await stat(configFile)).mode & 0o777, 0o600);
   assert.equal(JSON.parse(await readFile(configFile, 'utf8')).apiKey, expectedKey);
   assert.ok(!(await readFile(dataFile, 'utf8')).includes(expectedKey));
   assert.equal((await app.request('/.local/ai-config.json')).status, 404);
